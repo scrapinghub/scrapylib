@@ -1,7 +1,7 @@
 from dateutil.parser import parse
 from scrapy.contrib.loader.processor import Compose
 from scrapy import log
-from scextras.processors import default_output_processor
+from scrapylib.processors import default_output_processor
 
 def parse_datetime(value):
     try:

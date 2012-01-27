@@ -3,14 +3,14 @@ try:
 except ImportError:
     from distutils.core import setup
 
-setup(name='scextras',
+setup(name='scrapylib',
       version='0.1',
       license='BSD',
       description='Scrapy helper functions and processors',
       author='Scrapinghub',
       author_email='info@scrapinghub.com',
-      url='http://github.com/scrapinghub/scextras',
-      packages=['scextras', 'scextras.processors'],
+      url='http://github.com/scrapinghub/scrapylib',
+      packages=['scrapylib', 'scrapylib.processors', 'scrapylib.tests'],
       platforms = ['Any'],
       classifiers = [ 'Development Status :: 4 - Beta',
                       'License :: OSI Approved :: BSD License',
