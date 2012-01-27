@@ -10,7 +10,7 @@ def hash_values(*values):
 
     For example:
     >>> hash_values('some', 'values', 'to', 'hash')
-    'f37f5dc65beaaea35af05e16e26d439fd150c576'
+    '1d7b7a17aeb0e5f9a6814289d12d3253'
     """
     hash = hashlib.md5()
     for value in values:
