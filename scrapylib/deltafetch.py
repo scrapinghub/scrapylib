@@ -36,9 +36,10 @@ class DeltaFetch(object):
 
     """
 
-    def __init__(self, dir, dbmodule='anydbm'):
+    def __init__(self, dir, dbmodule='anydbm', reset=False):
         self.dir = dir
         self.dbmodule = __import__(dbmodule)
+        self.reset = reset
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
@@ -49,13 +50,15 @@ class DeltaFetch(object):
             raise NotConfigured
         dir = data_path(s.get('DELTAFETCH_DIR', 'deltafetch'))
         dbmodule = s.get('DELTAFETCH_DBM_MODULE', 'anydbm')
-        return cls(dir, dbmodule)
+        reset = s.getbool('DELTAFETCH_RESET')
+        return cls(dir, dbmodule, reset)
 
     def spider_opened(self, spider):
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
         dbpath = os.path.join(self.dir, '%s.db' % spider.name)
-        flag = 'n' if getattr(spider, 'deltafetch_reset', False) else 'c'
+        reset = self.reset or getattr(spider, 'deltafetch_reset', False)
+        flag = 'n' if reset else 'c'
         self.db = self.dbmodule.open(dbpath, flag)
 
     def spider_closed(self, spider):
