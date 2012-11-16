@@ -15,9 +15,7 @@ from boto.s3.key import Key
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.request import request_fingerprint
-from scrapy.conf import settings
 
 
 class SpiderTraceMiddleware(object):
@@ -29,13 +27,17 @@ class SpiderTraceMiddleware(object):
     REQUEST_ATTRS = ('url', 'method', 'body', 'headers', 'cookies', 'meta')
     RESPONSE_ATTRS = ('url', 'status', 'headers', 'body', 'request', 'flags')
 
-    def __init__(self):
-        self.bucket = settings.get("SPIDERTRACE_BUCKET")
+    def __init__(self, crawler):
+        self.bucket = crawler.settings.get("SPIDERTRACE_BUCKET")
         if not self.bucket:
             raise NotConfigured
-        dispatcher.connect(self.open_spider, signals.spider_opened)
-        dispatcher.connect(self.close_spider, signals.spider_closed)
+        crawler.signals.connect(self.open_spider, signals.spider_opened)
+        crawler.signals.connect(self.close_spider, signals.spider_closed)
         self.outputs = {}
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def process_spider_output(self, response, result, spider):
         f = self.outputs[spider]

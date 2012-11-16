@@ -3,8 +3,6 @@ from urllib import unquote
 from urllib2 import _parse_proxy
 from urlparse import urlunparse
 
-from scrapy.conf import settings
-
 
 class SelectiveProxyMiddleware(object):
     """A middleware to enable http proxy to selected spiders only.
@@ -15,9 +13,13 @@ class SelectiveProxyMiddleware(object):
                          through the proxy
     """
 
-    def __init__(self):
+    def __init__(self, settings):
         self.proxy = self.parse_proxy(settings.get('HTTP_PROXY'), 'http')
         self.proxy_spiders = set(settings.getlist('PROXY_SPIDERS', []))
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
 
     def parse_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)

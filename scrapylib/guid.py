@@ -2,7 +2,6 @@ import hashlib
 
 from scrapy import signals
 from scrapy.exceptions import DropItem
-from scrapy.xlib.pydispatch import dispatcher
 
 
 def hash_values(*values):
@@ -27,8 +26,13 @@ class GUIDPipeline(object):
 
     def __init__(self):
         self.guids = {}
-        dispatcher.connect(self.spider_opened, signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        o = cls()
+        crawler.signals.connect(o.spider_opened, signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signals.spider_closed)
+        return o
 
     def spider_opened(self, spider):
         self.guids[spider] = set()

@@ -4,7 +4,6 @@ from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 
@@ -40,8 +39,6 @@ class DeltaFetch(object):
         self.dir = dir
         self.dbmodule = __import__(dbmodule)
         self.reset = reset
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -51,7 +48,10 @@ class DeltaFetch(object):
         dir = data_path(s.get('DELTAFETCH_DIR', 'deltafetch'))
         dbmodule = s.get('DELTAFETCH_DBM_MODULE', 'anydbm')
         reset = s.getbool('DELTAFETCH_RESET')
-        return cls(dir, dbmodule, reset)
+        o = cls(dir, dbmodule, reset)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        return o
 
     def spider_opened(self, spider):
         if not os.path.exists(self.dir):
