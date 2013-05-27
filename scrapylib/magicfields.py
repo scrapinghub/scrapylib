@@ -35,9 +35,12 @@ Current magic variables are:
     - $url
             Shortcut for $response:url,
 
+Examples:
 
+MAGIC_FIELDS = {'timestamp': 'item scraped at $time', 'spider': '$spider:name'}
 
-See examples below
+The above configuration will add two fields to each scraped item: 'timestamp', which will be filled with the string 'item scraped at <scraped timestamp>',
+and 'spider', which will contain the spider name.
 """
 
 import re, time, datetime, os
