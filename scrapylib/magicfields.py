@@ -61,7 +61,7 @@ _ENTITY_FUNCTION_MAP = {
 }
 
 _ENTITIES_RE = re.compile("(\$[a-z]+)(:\w+)?")
-def _format(fmt, spider, fixed_values):
+def _format(fmt, spider, response, fixed_values):
     out = fmt
     for m in _ENTITIES_RE.finditer(fmt):
         val = None
@@ -74,6 +74,11 @@ def _format(fmt, spider, fixed_values):
                 spider.log("Error at '%s': spider does not have argument" % m.group())
             else:
                 val = str(getattr(spider, args[0]))
+        elif entity == "$response":
+            if not hasattr(response, args[0]):
+                 spider.log("Error at '%s': response does not have argument" % m.group())
+            else:
+                val = str(getattr(response, args[0]))
         elif entity in fixed_values:
             val = fixed_values[entity]
             if entity == "$setting" and args:
@@ -98,7 +103,7 @@ class MagicFieldsMiddleware(object):
         mfields = crawler.settings.getdict("MAGIC_FIELDS")
         if not mfields:
             raise NotConfigured
-        return cls(mfields, settings)
+        return cls(mfields, crawler.settings)
 
     def __init__(self, mfields, settings):
         self.mfields = mfields
