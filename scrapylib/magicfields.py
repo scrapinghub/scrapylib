@@ -1,8 +1,10 @@
 """
-Allow to add extra fields to items, based on the configuration setting MAGIC_FIELDS.
-MAGIC_FIELDS settings is a dict. The keys are the destination field names, their values, a string which admits magic variables,
+Allow to add extra fields to items, based on the configuration setting MAGIC_FIELDS and MAGIC_FIELDS_OVERRIDE.
+Both settings are a dict. The keys are the destination field names, their values, a string which admits magic variables,
 identified by a starting '$', which will be substituted by a corresponding value. Some magic also accept arguments, and are specified
 after the magic name, using a ':' as separator.
+
+You can set project global magics with MAGIC_FIELDS, and tune them for a specific spider using MAGIC_FIELDS_OVERRIDE.
 
 In case there is more than one argument, they must come separated by ','. So, the generic magic format is 
 
@@ -122,7 +124,8 @@ class MagicFieldsMiddleware(object):
     
     @classmethod
     def from_crawler(cls, crawler):
-        mfields = crawler.settings.getdict("MAGIC_FIELDS")
+        mfields = crawler.settings.getdict("MAGIC_FIELDS").copy()
+        mfields.update(crawler.settings.getdict("MAGIC_FIELDS_OVERRIDE"))
         if not mfields:
             raise NotConfigured
         return cls(mfields, crawler.settings)
