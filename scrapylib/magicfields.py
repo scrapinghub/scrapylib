@@ -2,8 +2,9 @@
 Allow to add extra fields to items, based on the configuration setting MAGIC_FIELDS.
 MAGIC_FIELDS settings is a dict. The keys are the destination field names, their values, a string which admits magic variables,
 identified by a starting '$', which will be substituted by a corresponding value. Some magic also accept arguments, and are specified
-after the magic name, using a ':' as separator. In case there is more than one argument, they must come separated by ','.
-So, the generic magic format is 
+after the magic name, using a ':' as separator.
+
+In case there is more than one argument, they must come separated by ','. So, the generic magic format is 
 
 $<magic name>[:arg1,arg2,...]
 
@@ -33,14 +34,22 @@ Current magic variables are:
     - $setting
             Access the given Scrapy setting. It accepts one argument: the name of the setting.
     - $url
-            Shortcut for $response:url,
+            Shortcut for $response:url.
+    - $field
+            Allows to copy the value of one field to another. Its argument is the source field. Effects are unpredicable if you use as source a field that is filled
+            using magic fields.
 
 Examples:
 
+The following configuration will add two fields to each scraped item: 'timestamp', which will be filled with the string 'item scraped at <scraped timestamp>',
+and 'spider', which will contain the spider name:
+
 MAGIC_FIELDS = {'timestamp': 'item scraped at $time', 'spider': '$spider:name'}
 
-The above configuration will add two fields to each scraped item: 'timestamp', which will be filled with the string 'item scraped at <scraped timestamp>',
-and 'spider', which will contain the spider name.
+The following configuration will copy the url to the field sku:
+
+MAGIC_FIELDS = {'sku': '$field:url'}
+
 """
 
 import re, time, datetime, os
@@ -61,7 +70,11 @@ _ENTITY_FUNCTION_MAP = {
 }
 
 _ENTITIES_RE = re.compile("(\$[a-z]+)(:\w+)?")
-def _format(fmt, spider, response, fixed_values):
+def _first_arg(args):
+    if args:
+        return args.pop(0)
+
+def _format(fmt, spider, response, item, fixed_values):
     out = fmt
     for m in _ENTITIES_RE.finditer(fmt):
         val = None
@@ -70,21 +83,30 @@ def _format(fmt, spider, response, fixed_values):
         if entity == "$jobid":
             val = os.environ.get('SCRAPY_JOB', '')
         elif entity == "$spider":
-            if not hasattr(spider, args[0]):
-                spider.log("Error at '%s': spider does not have argument" % m.group())
+            attr = _first_arg(args)
+            if not attr or not hasattr(spider, attr):
+                spider.log("Error at '%s': spider does not have attribute" % m.group())
             else:
-                val = str(getattr(spider, args[0]))
+                val = str(getattr(spider, attr))
         elif entity == "$response":
-            if not hasattr(response, args[0]):
-                 spider.log("Error at '%s': response does not have argument" % m.group())
+            attr = _first_arg(args)
+            if not attr or not hasattr(response, attr):
+                spider.log("Error at '%s': response does not have attribute" % m.group())
             else:
-                val = str(getattr(response, args[0]))
+                val = str(getattr(response, attr))
+        elif entity == "$field":
+            attr = _first_arg(args)
+            if attr in item:
+                val = str(item[attr])
         elif entity in fixed_values:
+            attr = _first_arg(args)
             val = fixed_values[entity]
-            if entity == "$setting" and args:
-                val = str(val[args[0]])
+            if entity == "$setting" and attr:
+                val = str(val[attr])
         elif entity == "$env" and args:
-                val = os.environ.get(args[0], '')
+            attr = _first_arg(args)
+            if attr:
+                val = os.environ.get(attr, '')
         else:
             function = _ENTITY_FUNCTION_MAP.get(entity)
             if function is not None:
@@ -116,6 +138,6 @@ class MagicFieldsMiddleware(object):
         for _res in result:
             if isinstance(_res, BaseItem):
                 for field, fmt in self.mfields.items():
-                    _res.setdefault(field, _format(fmt, spider, response, self.fixed_values))
+                    _res.setdefault(field, _format(fmt, spider, response, _res, self.fixed_values))
             yield _res 
 
