@@ -40,18 +40,22 @@ class HcfMiddleware(object):
             raise NotConfigured('%s not found' % key)
         return value
 
+    def _msg(self, msg):
+        log.msg('(HCF) %s' % msg)
+
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
 
     def process_start_requests(self, start_requests, spider):
-        has_new_links = False
-        for link in self._get_new_links():
-            has_new_links = True
-            yield link
+        has_new_requests = False
+        for req in self._get_new_requests():
+            has_new_requests = True
+            yield req
 
         # if there are no links in the hcf, use the start_requests
-        if not has_new_links:
+        if not has_new_requests:
+            self._msg('Using start_requests')
             for r in start_requests:
                 yield r
 
@@ -80,23 +84,33 @@ class HcfMiddleware(object):
         self._delete_processed_ids()
         # XXX: Start new job
 
-    def _get_new_links(self):
+    def _get_new_requests(self):
         """ Get a new batch of links from the HCF."""
+        num_batches = 0
+        num_links = 0
         for batch in self.fclient.read(self.hs_frontier, self.hs_slot):
+            num_batches += 1
             self.batch_ids.append(batch['id'])
             for r in batch['requests']:
+                num_links += 1
                 yield Request(r[0])
+        self._msg('Read %d new batches from HCF' % num_batches)
+        self._msg('Read %d new links from HCF' % num_links)
 
     def _save_new_links(self):
         """ Save the new extracted links into the HCF."""
+        num_links = 0
         for slot, links in self.new_links.items():
+            num_links += len(links)
             fps = [{'fp': l} for l in links]
             self.fclient.add(self.hs_frontier, self.hs_slot, fps)
+        self._msg('Stored %d new links in HCF' % num_links)
         self.new_links = defaultdict(list)
 
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
         self.fclient.delete(self.hs_frontier, self.hs_slot, self.batch_ids)
+        self._msg('Deleted %d processed batches in HCF' % len(self.batch_ids))
         self.batch_ids = []
 
     def _get_slot(self, request):
