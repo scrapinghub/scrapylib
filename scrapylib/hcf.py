@@ -6,7 +6,7 @@ urls to crawl and store back the links extracted.
 """
 from collections import defaultdict
 from scrapy import signals, log
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, DontCloseSpider
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
@@ -18,6 +18,7 @@ class HcfMiddleware(object):
 
     def __init__(self, crawler):
 
+        self.crawler = crawler
         hs_endpoint = self._get_config(crawler, "HS_ENDPOINT")
         hs_auth = self._get_config(crawler, "HS_AUTH")
         hs_projectid = self._get_config(crawler, "HS_PROJECTID")
@@ -76,8 +77,12 @@ class HcfMiddleware(object):
     def idle_spider(self, spider):
         self._save_new_links()
         self._delete_processed_ids()
-        for link in self._get_new_links():
-            yield link
+        has_new_requests = False
+        for request in self._get_new_requests():
+            self.crawler.engine.schedule(request, spider)
+            has_new_requests = True
+        if has_new_requests:
+            raise DontCloseSpider
 
     def close_spider(self, spider):
         self._save_new_links()
