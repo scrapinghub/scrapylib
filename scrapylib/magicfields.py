@@ -35,8 +35,6 @@ Current magic variables are:
                     Response http headers.
     - $setting
             Access the given Scrapy setting. It accepts one argument: the name of the setting.
-    - $url
-            Shortcut for $response:url.
     - $field
             Allows to copy the value of one field to another. Its argument is the source field. Effects are unpredicable if you use as source a field that is filled
             using magic fields.
