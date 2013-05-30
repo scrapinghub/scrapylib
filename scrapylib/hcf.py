@@ -21,6 +21,8 @@ class HcfMiddleware(object):
         hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
+        # Max number of links to read from the HCF within a single run.
+        self.hs_max_links = self._get_config(crawler, "HS_MAX_LINKS", 100)
 
         self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
         self.project = self.hsclient.get_project(hs_projectid)
@@ -29,11 +31,11 @@ class HcfMiddleware(object):
         self.new_links = defaultdict(list)
         self.batch_ids = []
 
-        # crawler.signals.connect(self.idle_spider, signals.spider_idle)
+        crawler.signals.connect(self.idle_spider, signals.spider_idle)
         crawler.signals.connect(self.close_spider, signals.spider_closed)
 
-    def _get_config(self, crawler, key):
-        value = crawler.settings.get(key)
+    def _get_config(self, crawler, key, default=None):
+        value = crawler.settings.get(key, default)
         if not value:
             raise NotConfigured('%s not found' % key)
         return value
@@ -84,7 +86,7 @@ class HcfMiddleware(object):
 
     def close_spider(self, spider, reason):
         # Only store the results if the spider finished normally, if it
-        # was shutdown there is not way to know whether all the url batches
+        # didn't finished properly there is not way to know whether all the url batches
         # were processed and it is better not to delete them from the frontier
         # (so they will be picked by anothe process).
         if reason == 'finished':
@@ -100,10 +102,12 @@ class HcfMiddleware(object):
         num_links = 0
         for batch in self.fclient.read(self.hs_frontier, self.hs_slot):
             num_batches += 1
-            self.batch_ids.append(batch['id'])
             for r in batch['requests']:
                 num_links += 1
                 yield Request(r[0])
+            self.batch_ids.append(batch['id'])
+            if num_links >= self.hs_max_links:
+                break
         self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
         self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
 
