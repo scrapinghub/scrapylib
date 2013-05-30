@@ -73,6 +73,7 @@ class HcfMiddleware(object):
 
     def idle_spider(self, spider):
         self._save_new_links()
+        self.fclient.flush()
         self._delete_processed_ids()
         has_new_requests = False
         for request in self._get_new_requests():
