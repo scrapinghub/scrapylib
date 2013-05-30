@@ -112,9 +112,10 @@ class HcfMiddleware(object):
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
         self.fclient.delete(self.hs_frontier, self.hs_slot, self.batch_ids)
-        self._msg('Deleted %d processed batches in HCF' % len(self.batch_ids))
+        self._msg('Deleted %d processed batches in slot(%s)' % (len(self.batch_ids),
+                                                                self.hs_slot))
         self.batch_ids = []
 
     def _get_slot(self, request):
         """ Determine to which slot should be saved the request."""
-        return 'slot'
+        return '0'
