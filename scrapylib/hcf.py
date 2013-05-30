@@ -29,7 +29,7 @@ class HcfMiddleware(object):
         self.new_links = defaultdict(list)
         self.batch_ids = []
 
-        crawler.signals.connect(self.idle_spider, signals.spider_idle)
+        # crawler.signals.connect(self.idle_spider, signals.spider_idle)
         crawler.signals.connect(self.close_spider, signals.spider_closed)
 
     def _get_config(self, crawler, key):
@@ -82,10 +82,15 @@ class HcfMiddleware(object):
         if has_new_requests:
             raise DontCloseSpider
 
-    def close_spider(self, spider):
-        self._save_new_links()
-        self._delete_processed_ids()
-        # XXX: Start new job
+    def close_spider(self, spider, reason):
+        # Only store the results if the spider finished normally, if it
+        # was shutdown there is not way to know whether all the url batches
+        # were processed and it is better not to delete them from the frontier
+        # (so they will be picked by anothe process).
+        if reason == 'finished':
+            self._save_new_links()
+            self._delete_processed_ids()
+            # XXX: Start new job
         self.fclient.close()
         self.hsclient.close()
 
