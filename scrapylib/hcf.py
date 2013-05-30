@@ -25,9 +25,9 @@ class HcfMiddleware(object):
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
 
-        hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
-        project = hsclient.get_project(hs_projectid)
-        self.fclient = project.frontier
+        self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
+        self.project = self.hsclient.get_project(hs_projectid)
+        self.fclient = self.project.frontier
 
         self.new_links = defaultdict(list)
         self.batch_ids = []
@@ -88,6 +88,7 @@ class HcfMiddleware(object):
         self._save_new_links()
         self._delete_processed_ids()
         # XXX: Start new job
+        self.hsclient.close()
 
     def _get_new_requests(self):
         """ Get a new batch of links from the HCF."""
