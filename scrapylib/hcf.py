@@ -10,9 +10,6 @@ from scrapy.exceptions import NotConfigured, DontCloseSpider
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
-META_KEY_SKIP_HCF = 'skip_hcf'
-META_KEY_SLOT_CALLBACK = 'slot_callback'
-
 
 class HcfMiddleware(object):
 
@@ -61,8 +58,8 @@ class HcfMiddleware(object):
                 yield r
 
     def process_spider_output(self, response, result, spider):
-        skip_hcf = response.meta.get(META_KEY_SKIP_HCF, False)
-        slot_callback = response.meta.get(META_KEY_SLOT_CALLBACK, self._get_slot)
+        skip_hcf = response.meta.get('skip_hcf', False)
+        slot_callback = getattr(spider, 'slot_callback', self._get_slot)
         for item in result:
             if isinstance(item, Request) and not skip_hcf:
                 request = item
@@ -110,7 +107,8 @@ class HcfMiddleware(object):
             num_links += len(links)
             fps = [{'fp': l} for l in links]
             self.fclient.add(self.hs_frontier, self.hs_slot, fps)
-        self._msg('Stored %d new links in HCF' % num_links)
+            self._msg('Stored %d new links in HCF slot: %s' % (num_links,
+                                                               self.hs_slot))
         self.new_links = defaultdict(list)
 
     def _delete_processed_ids(self):
