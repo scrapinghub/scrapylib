@@ -18,14 +18,15 @@ class HcfMiddleware(object):
         self.crawler = crawler
         hs_endpoint = self._get_config(crawler, "HS_ENDPOINT")
         hs_auth = self._get_config(crawler, "HS_AUTH")
-        hs_projectid = self._get_config(crawler, "HS_PROJECTID")
+        self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
         # Max number of links to read from the HCF within a single run.
-        self.hs_max_links = self._get_config(crawler, "HS_MAX_LINKS", 100)
+        self.hs_max_links = crawler.settings.get("HS_MAX_LINKS", 100)
+        self.hs_start_job_on_closing = crawler.settings.get("HS_START_JOB_ON_CLOSING", False)
 
         self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
-        self.project = self.hsclient.get_project(hs_projectid)
+        self.project = self.hsclient.get_project(self.hs_projectid)
         self.fclient = self.project.frontier
 
         self.new_links = defaultdict(list)
@@ -34,8 +35,8 @@ class HcfMiddleware(object):
         crawler.signals.connect(self.idle_spider, signals.spider_idle)
         crawler.signals.connect(self.close_spider, signals.spider_closed)
 
-    def _get_config(self, crawler, key, default=None):
-        value = crawler.settings.get(key, default)
+    def _get_config(self, crawler, key):
+        value = crawler.settings.get(key)
         if not value:
             raise NotConfigured('%s not found' % key)
         return value
@@ -92,7 +93,15 @@ class HcfMiddleware(object):
         if reason == 'finished':
             self._save_new_links()
             self._delete_processed_ids()
-            # XXX: Start new job
+            # If this settting is True, starts a new job right after this spider
+            # is finished, the idea is to limit every spider runtime (either via
+            # itemcount, pagecount or timeout) and then have the old spider start
+            # a new one to take its place in the slot.
+            if self.hs_start_job_on_closing:
+                self._msg("Starting new job" + spider.name)
+                job = self.hsclient.start_job(projectid=self.hs_projectid,
+                                              spider=spider.name)
+                self._msg("New job started: %s" % job)
         self.fclient.close()
         self.hsclient.close()
 
