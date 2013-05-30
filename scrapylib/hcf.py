@@ -85,6 +85,7 @@ class HcfMiddleware(object):
         self._save_new_links()
         self._delete_processed_ids()
         # XXX: Start new job
+        self.fclient.close()
         self.hsclient.close()
 
     def _get_new_requests(self):
@@ -97,18 +98,15 @@ class HcfMiddleware(object):
             for r in batch['requests']:
                 num_links += 1
                 yield Request(r[0])
-        self._msg('Read %d new batches from HCF' % num_batches)
-        self._msg('Read %d new links from HCF' % num_links)
+        self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
+        self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
 
     def _save_new_links(self):
         """ Save the new extracted links into the HCF."""
-        num_links = 0
         for slot, links in self.new_links.items():
-            num_links += len(links)
             fps = [{'fp': l} for l in links]
-            self.fclient.add(self.hs_frontier, self.hs_slot, fps)
-            self._msg('Stored %d new links in HCF slot: %s' % (num_links,
-                                                               self.hs_slot))
+            self.fclient.add(self.hs_frontier, slot, fps)
+            self._msg('Stored %d new links in slot(%s)' % (len(links), slot))
         self.new_links = defaultdict(list)
 
     def _delete_processed_ids(self):
