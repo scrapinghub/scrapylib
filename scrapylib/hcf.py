@@ -3,6 +3,31 @@ HCF Middleware
 
 This SpiderMiddleware uses the HCF backend from hubstorage to retrieve the new
 urls to crawl and store back the links extracted.
+
+To activate this middleware it needs to be added to the SPIDER_MIDDLEWARES 
+list, i.e:
+
+SPIDER_MIDDLEWARES = {
+    'scrapylib.hcf.HcfMiddleware': 543,
+}
+
+And the next settings need to be defined:
+
+    HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003
+    HS_AUTH     - API key
+    HS_PROJECTID - Project ID in the panel.
+    HS_FRONTIER  -  Frontier name.
+    HS_SLOT      - Slot from where the spider will read new URLs.
+    
+The next optional settings can be defined:
+
+    HS_MAX_LINKS - Number of links to be read from the HCF in a single call. 
+                   The default is 100.
+    HS_START_JOB_ON_CLOSING - If this setting is set to to true when the spider
+                              closes and the spider closing reason is one of the
+                              following: 'finished', 'closespider_timeout',
+                              'closespider_itemcount' or'closespider_pagecount';
+                              it will start another job for the same spider. 
 """
 from collections import defaultdict
 from scrapy import signals, log
@@ -93,6 +118,11 @@ class HcfMiddleware(object):
         if reason == 'finished':
             self._save_new_links()
             self._delete_processed_ids()
+
+        # If the spider finished normally (or it was terminated by a user defined
+        # condition) check whether we want to start another job for the same spider.
+        if reason in ('finished', 'closespider_timeout',
+                      'closespider_itemcount', 'closespider_pagecount'):
             # If this settting is True, starts a new job right after this spider
             # is finished, the idea is to limit every spider runtime (either via
             # itemcount, pagecount or timeout) and then have the old spider start
