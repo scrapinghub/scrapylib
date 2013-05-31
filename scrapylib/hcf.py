@@ -27,7 +27,18 @@ The next optional settings can be defined:
                               closes and the spider closing reason is one of the
                               following: 'finished', 'closespider_timeout',
                               'closespider_itemcount' or'closespider_pagecount';
-                              it will start another job for the same spider. 
+                              it will start another job for the same spider.
+                              
+In order to determine to which slot save a new URL the middleware checks
+for the slot_callback method in the spider, this method has the next signature:
+
+   def get_slot_callback(request):
+       ...
+       return slot
+       
+If the spider does not define a slot_callback, then the default slot '0' is
+used for all the URLs
+
 """
 from collections import defaultdict
 from scrapy import signals, log
