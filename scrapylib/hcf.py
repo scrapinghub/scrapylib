@@ -40,7 +40,7 @@ The next optional settings can be defined:
 The next keys can be defined in a Request meta in order to control the behavior
 of the HCF middleware:
 
-    dont_hcf - If set to True the request won't be stored in the HCF.
+    use_hcf - If set to True the request will be stored in the HCF.
     hcf_params - Dictionary of parameters to be stored in the HCF with the request
                  fingerprint
 
@@ -133,7 +133,7 @@ class HcfMiddleware(object):
             if isinstance(item, Request):
                 request = item
                 if (request.method == 'GET' and  # XXX: Only GET support for now.
-                    not request.meta.get('dont_hcf', False)):
+                    request.meta.get('use_hcf', False)):
                     slot = slot_callback(request)
                     hcf_params = request.meta.get('hcf_params')
                     fp = {'fp': request.url}
