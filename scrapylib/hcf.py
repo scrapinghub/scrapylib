@@ -117,7 +117,7 @@ class HcfMiddleware(object):
         for item in result:
             if isinstance(item, Request) and not dont_hcf:
                 request = item
-                if request.method == 'GET':  # XXX: Only POST support for now.
+                if request.method == 'GET':  # XXX: Only GET support for now.
                     slot = slot_callback(request)
                     self.new_links[slot].append(request.url)
                 else:
