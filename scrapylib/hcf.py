@@ -21,8 +21,8 @@ And the next settings need to be defined:
     
 The next optional settings can be defined:
 
-    HS_MAX_LINKS - Number of links to be read from the HCF in a single call. 
-                   The default is 100.
+    HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call. 
+                     The default is 10.
     HS_START_JOB_ON_CLOSING - If this setting is set to to true when the spider
                               closes and the spider closing reason is one of the
                               following: 'finished', 'closespider_timeout',
@@ -46,6 +46,8 @@ from scrapy.exceptions import NotConfigured, DontCloseSpider
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
+DEFAULT_MAX_BATCHES = 10
+
 
 class HcfMiddleware(object):
 
@@ -57,8 +59,11 @@ class HcfMiddleware(object):
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
-        # Max number of links to read from the HCF within a single run.
-        self.hs_max_links = crawler.settings.get("HS_MAX_LINKS", 100)
+        # Max number of batches to read from the HCF within a single run.
+        try:
+            self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
+        except ValueError:
+            self.hs_max_baches = DEFAULT_MAX_BATCHES
         self.hs_start_job_on_closing = crawler.settings.get("HS_START_JOB_ON_CLOSING", False)
 
         self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
@@ -156,7 +161,7 @@ class HcfMiddleware(object):
                 num_links += 1
                 yield Request(r[0])
             self.batch_ids.append(batch['id'])
-            if num_links >= self.hs_max_links:
+            if num_batches >= self.hs_max_baches:
                 break
         self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
         self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
