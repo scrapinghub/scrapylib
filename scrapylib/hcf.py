@@ -18,7 +18,10 @@ And the next settings need to be defined:
     HS_PROJECTID - Project ID in the panel.
     HS_FRONTIER  -  Frontier name.
     HS_SLOT      - Slot from where the spider will read new URLs.
-    
+
+Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
+the spider attributes: "frontier" and "slot" respectively.
+
 The next optional settings can be defined:
 
     HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call. 
@@ -57,8 +60,8 @@ class HcfMiddleware(object):
         hs_endpoint = self._get_config(crawler, "HS_ENDPOINT")
         hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
-        self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
-        self.hs_slot = self._get_config(crawler, "HS_SLOT")
+        self.hs_project_frontier = self._get_config(crawler, "HS_FRONTIER")
+        self.hs_project_slot = self._get_config(crawler, "HS_SLOT")
         # Max number of batches to read from the HCF within a single run.
         try:
             self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
@@ -90,6 +93,13 @@ class HcfMiddleware(object):
         return cls(crawler)
 
     def process_start_requests(self, start_requests, spider):
+
+        self.hs_frontier = getattr(spider, 'frontier', self.hs_project_frontier)
+        self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
+
+        self.hs_slot = getattr(spider, 'slot', self.hs_project_slot)
+        self._msg('Using HS_SLOT=%s' % self.hs_slot)
+
         has_new_requests = False
         for req in self._get_new_requests():
             has_new_requests = True
