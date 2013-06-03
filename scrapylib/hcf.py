@@ -16,7 +16,7 @@ And the next settings need to be defined:
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003
     HS_AUTH     - API key
     HS_PROJECTID - Project ID in the panel.
-    HS_FRONTIER  -  Frontier name.
+    HS_FRONTIER  - Frontier name.
     HS_SLOT      - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
@@ -36,6 +36,17 @@ The next optional settings can be defined:
                              'closespider_pagecount'
                              
                              The default is an empty list.
+
+The next keys can be defined in a Request meta in order to control the behavior
+of the HCF middleware:
+
+    dont_hcf - If set to True the request won't be stored in the HCF.
+    hcf_params - Dictionary of parameters to be stored in the HCF with the request
+                 fingerprint
+
+        qdata    data to be stored along with the fingerprint in the request queue
+        fdata    data to be stored along with the fingerprint in the fingerprint set
+        p    Priority - lower priority numbers are returned first. The default is 0
 
 In order to determine to which slot save a new URL the middleware checks
 for the slot_callback method in the spider, this method has the next signature:
