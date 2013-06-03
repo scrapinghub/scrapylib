@@ -117,12 +117,12 @@ class HcfMiddleware(object):
                 yield r
 
     def process_spider_output(self, response, result, spider):
-        dont_hcf = response.meta.get('dont_hcf', False)
         slot_callback = getattr(spider, 'slot_callback', self._get_slot)
         for item in result:
-            if isinstance(item, Request) and not dont_hcf:
+            if isinstance(item, Request):
                 request = item
-                if request.method == 'GET':  # XXX: Only GET support for now.
+                if (request.method == 'GET' and  # XXX: Only GET support for now.
+                    not request.meta.get('dont_hcf', False)):
                     slot = slot_callback(request)
                     hcf_params = request.meta.get('hcf_params')
                     fp = {'fp': request.url}
