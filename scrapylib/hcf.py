@@ -124,7 +124,11 @@ class HcfMiddleware(object):
                 request = item
                 if request.method == 'GET':  # XXX: Only GET support for now.
                     slot = slot_callback(request)
-                    self.new_links[slot].append(request.url)
+                    hcf_params = request.meta.get('hcf_params')
+                    fp = {'fp': request.url}
+                    if hcf_params:
+                        fp.update(hcf_params)
+                    self.new_links[slot].append(fp)
                 else:
                     yield item
             else:
@@ -178,10 +182,9 @@ class HcfMiddleware(object):
 
     def _save_new_links(self):
         """ Save the new extracted links into the HCF."""
-        for slot, links in self.new_links.items():
-            fps = [{'fp': l} for l in links]
+        for slot, fps in self.new_links.items():
             self.fclient.add(self.hs_frontier, slot, fps)
-            self._msg('Stored %d new links in slot(%s)' % (len(links), slot))
+            self._msg('Stored %d new links in slot(%s)' % (len(fps), slot))
         self.new_links = defaultdict(list)
 
     def _delete_processed_ids(self):
