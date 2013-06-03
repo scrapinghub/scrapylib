@@ -26,12 +26,17 @@ The next optional settings can be defined:
 
     HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call. 
                      The default is 10.
-    HS_START_JOB_ON_CLOSING - If this setting is set to to true when the spider
-                              closes and the spider closing reason is one of the
-                              following: 'finished', 'closespider_timeout',
-                              'closespider_itemcount' or'closespider_pagecount';
-                              it will start another job for the same spider.
-                              
+    HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
+                             with any of these reasons a new job will be started
+                             for the same slot. Some possible reasons are:
+
+                             'finished'
+                             'closespider_timeout'
+                             'closespider_itemcount'
+                             'closespider_pagecount'
+                             
+                             The default is an empty list.
+
 In order to determine to which slot save a new URL the middleware checks
 for the slot_callback method in the spider, this method has the next signature:
 
@@ -67,7 +72,7 @@ class HcfMiddleware(object):
             self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
         except ValueError:
             self.hs_max_baches = DEFAULT_MAX_BATCHES
-        self.hs_start_job_on_closing = crawler.settings.get("HS_START_JOB_ON_CLOSING", False)
+        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
 
         self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
         self.project = self.hsclient.get_project(self.hs_projectid)
@@ -145,19 +150,15 @@ class HcfMiddleware(object):
             self._save_new_links()
             self._delete_processed_ids()
 
-        # If the spider finished normally (or it was terminated by a user defined
-        # condition) check whether we want to start another job for the same spider.
-        if reason in ('finished', 'closespider_timeout',
-                      'closespider_itemcount', 'closespider_pagecount'):
-            # If this settting is True, starts a new job right after this spider
-            # is finished, the idea is to limit every spider runtime (either via
-            # itemcount, pagecount or timeout) and then have the old spider start
-            # a new one to take its place in the slot.
-            if self.hs_start_job_on_closing:
-                self._msg("Starting new job" + spider.name)
-                job = self.hsclient.start_job(projectid=self.hs_projectid,
-                                              spider=spider.name)
-                self._msg("New job started: %s" % job)
+        # If the reason is defined in the hs_start_job_on_reason list then start
+        # a new job right after this spider is finished. The idea is to limit
+        # every spider runtime (either via itemcount, pagecount or timeout) and
+        # then have the old spider start a new one to take its place in the slot.
+        if reason in self.hs_start_job_on_reason:
+            self._msg("Starting new job" + spider.name)
+            job = self.hsclient.start_job(projectid=self.hs_projectid,
+                                          spider=spider.name)
+            self._msg("New job started: %s" % job)
         self.fclient.close()
         self.hsclient.close()
 
