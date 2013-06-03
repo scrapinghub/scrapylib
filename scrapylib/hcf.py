@@ -165,8 +165,7 @@ class HcfMiddleware(object):
         """ Get a new batch of links from the HCF."""
         num_batches = 0
         num_links = 0
-        for batch in self.fclient.read(self.hs_frontier, self.hs_slot):
-            num_batches += 1
+        for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_slot), 1):
             for r in batch['requests']:
                 num_links += 1
                 yield Request(r[0])
