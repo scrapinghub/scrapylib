@@ -112,10 +112,10 @@ class HcfMiddleware(object):
                 yield r
 
     def process_spider_output(self, response, result, spider):
-        skip_hcf = response.meta.get('skip_hcf', False)
+        dont_hcf = response.meta.get('dont_hcf', False)
         slot_callback = getattr(spider, 'slot_callback', self._get_slot)
         for item in result:
-            if isinstance(item, Request) and not skip_hcf:
+            if isinstance(item, Request) and not dont_hcf:
                 request = item
                 if request.method == 'GET':  # XXX: Only POST support for now.
                     slot = slot_callback(request)
