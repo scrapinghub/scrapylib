@@ -4,7 +4,7 @@ HCF Middleware
 This SpiderMiddleware uses the HCF backend from hubstorage to retrieve the new
 urls to crawl and store back the links extracted.
 
-To activate this middleware it needs to be added to the SPIDER_MIDDLEWARES 
+To activate this middleware it needs to be added to the SPIDER_MIDDLEWARES
 list, i.e:
 
 SPIDER_MIDDLEWARES = {
@@ -24,7 +24,7 @@ the spider attributes: "frontier" and "slot" respectively.
 
 The next optional settings can be defined:
 
-    HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call. 
+    HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
                      The default is 10.
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
@@ -34,7 +34,7 @@ The next optional settings can be defined:
                              'closespider_timeout'
                              'closespider_itemcount'
                              'closespider_pagecount'
-                             
+
                              The default is an empty list.
 
 The next keys can be defined in a Request meta in order to control the behavior
@@ -48,13 +48,16 @@ of the HCF middleware:
         fdata    data to be stored along with the fingerprint in the fingerprint set
         p    Priority - lower priority numbers are returned first. The default is 0
 
+The value of 'qdata' parameter could be retrieved later using
+``response.meta['hcf_params']['qdata']``.
+
 In order to determine to which slot save a new URL the middleware checks
 for the slot_callback method in the spider, this method has the next signature:
 
    def get_slot_callback(request):
        ...
        return slot
-       
+
 If the spider does not define a slot_callback, then the default slot '0' is
 used for all the URLs
 
@@ -160,7 +163,7 @@ class HcfMiddleware(object):
         # Only store the results if the spider finished normally, if it
         # didn't finished properly there is not way to know whether all the url batches
         # were processed and it is better not to delete them from the frontier
-        # (so they will be picked by anothe process).
+        # (so they will be picked by another process).
         if reason == 'finished':
             self._save_new_links()
             self._delete_processed_ids()
@@ -182,9 +185,9 @@ class HcfMiddleware(object):
         num_batches = 0
         num_links = 0
         for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_slot), 1):
-            for r in batch['requests']:
+            for fingerprint, data in batch['requests']:
                 num_links += 1
-                yield Request(r[0])
+                yield Request(url=fingerprint, meta={'hcf_params': {'qdata': data}})
             self.batch_ids.append(batch['id'])
             if num_batches >= self.hs_max_baches:
                 break

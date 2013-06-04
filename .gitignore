@@ -2,3 +2,8 @@
 **swp
 **pyc
 **~
+
+# setuptools/distutils files
+scrapylib\.egg-info
+build/
+dist/
