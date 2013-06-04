@@ -13,7 +13,6 @@ SPIDER_MIDDLEWARES = {
 
 And the next settings need to be defined:
 
-    HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003
     HS_AUTH     - API key
     HS_PROJECTID - Project ID in the panel.
     HS_FRONTIER  - Frontier name.
@@ -24,6 +23,9 @@ the spider attributes: "frontier" and "slot" respectively.
 
 The next optional settings can be defined:
 
+    HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
+                  The default value is provided by by python-hubstorage
+                  package.
     HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
                      The default is 10.
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
@@ -76,7 +78,7 @@ class HcfMiddleware(object):
     def __init__(self, crawler):
 
         self.crawler = crawler
-        hs_endpoint = self._get_config(crawler, "HS_ENDPOINT")
+        hs_endpoint = crawler.settings.get("HS_ENDPOINT")
         hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_project_frontier = self._get_config(crawler, "HS_FRONTIER")
