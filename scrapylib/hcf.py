@@ -26,21 +26,18 @@ The next optional settings can be defined:
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
                   The default value is provided by the python-hubstorage
                   package.
+
     HS_MAX_LINKS - Number of links to be read from the HCF, the default is 1000.
+
+    HS_START_JOB_ENABLED - Enable whether to start a new job when the spider
+                           finishes. The default is False
 
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
-                             for the same slot. Some possible reasons are:
-
-                             'finished'
-                             'closespider_timeout'
-                             'closespider_itemcount'
-                             'closespider_pagecount'
-
-                             The default is an empty list.
+                             for the same slot. The default is ['finished']
 
     HS_START_JOB_NEW_PANEL - If True the jobs will be started in the new panel.
-                             The default is false.
+                             The default is False.
 
     HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
                          use to store the new links. The default is 8.
@@ -98,7 +95,8 @@ class HcfMiddleware(object):
             self.hs_max_links = int(crawler.settings.get("HS_MAX_LINKS", DEFAULT_MAX_LINKS))
         except ValueError:
             self.hs_max_links = DEFAULT_MAX_LINKS
-        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
+        self.hs_start_job_enabled = crawler.settings.get("HS_START_JOB_ENABLED", False)
+        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", ['finished'])
         self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
 
         if not self.hs_start_job_new_panel:
@@ -190,7 +188,7 @@ class HcfMiddleware(object):
         # a new job right after this spider is finished. The idea is to limit
         # every spider runtime (either via itemcount, pagecount or timeout) and
         # then have the old spider start a new one to take its place in the slot.
-        if reason in self.hs_start_job_on_reason:
+        if self.hs_start_job_enabled and reason in self.hs_start_job_on_reason:
             self._msg("Starting new job" + spider.name)
             self._start_job(spider)
             self._msg("New job started: %s" % job)
