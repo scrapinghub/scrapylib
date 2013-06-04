@@ -19,7 +19,7 @@ And the next settings need to be defined:
     HS_SLOT      - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
-the spider attributes: "frontier" and "slot" respectively.
+the spider attributes: "hs_frontier" and "hs_slot" respectively.
 
 The next optional settings can be defined:
 
@@ -115,10 +115,10 @@ class HcfMiddleware(object):
 
     def process_start_requests(self, start_requests, spider):
 
-        self.hs_frontier = getattr(spider, 'frontier', self.hs_project_frontier)
+        self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_project_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_slot = getattr(spider, 'slot', self.hs_project_slot)
+        self.hs_slot = getattr(spider, 'hs_slot', self.hs_project_slot)
         self._msg('Using HS_SLOT=%s' % self.hs_slot)
 
         has_new_requests = False
