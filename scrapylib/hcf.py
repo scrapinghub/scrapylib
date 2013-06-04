@@ -28,6 +28,7 @@ The next optional settings can be defined:
                   package.
     HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
                      The default is 10.
+
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
                              for the same slot. Some possible reasons are:
@@ -38,6 +39,9 @@ The next optional settings can be defined:
                              'closespider_pagecount'
 
                              The default is an empty list.
+
+    HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
+                         use to store the new links. The default is 8.
 
 The next keys can be defined in a Request meta in order to control the behavior
 of the HCF middleware:
@@ -60,10 +64,8 @@ for the slot_callback method in the spider, this method has the next signature:
        ...
        return slot
 
-If the spider does not define a slot_callback, then the default slot '0' is
-used for all the URLs
-
 """
+import hashlib
 from collections import defaultdict
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured
@@ -71,6 +73,7 @@ from scrapy.http import Request
 from hubstorage import HubstorageClient
 
 DEFAULT_MAX_BATCHES = 10
+DEFAULT_HS_NUMBER_OF_SLOTS = 8
 
 
 class HcfMiddleware(object):
@@ -83,7 +86,10 @@ class HcfMiddleware(object):
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
-        # Max number of batches to read from the HCF within a single run.
+        try:
+            self.hs_number_of_slots = int(crawler.settings.get("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS))
+        except ValueError:
+            self.hs_number_of_slots = DEFAULT_HS_NUMBER_OF_SLOTS
         try:
             self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
         except ValueError:
@@ -203,4 +209,7 @@ class HcfMiddleware(object):
 
     def _get_slot(self, request):
         """ Determine to which slot should be saved the request."""
-        return '0'
+        md5 = hashlib.md5()
+        md5.update(request.url)
+        digest = md5.hexdigest()
+        return str(int(digest, 16) % self.hs_number_of_slots)
