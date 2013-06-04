@@ -24,7 +24,7 @@ the spider attributes: "frontier" and "slot" respectively.
 The next optional settings can be defined:
 
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
-                  The default value is provided by by python-hubstorage
+                  The default value is provided by the python-hubstorage
                   package.
     HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
                      The default is 10.
