@@ -66,7 +66,7 @@ used for all the URLs
 """
 from collections import defaultdict
 from scrapy import signals, log
-from scrapy.exceptions import NotConfigured, DontCloseSpider
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
@@ -97,7 +97,6 @@ class HcfMiddleware(object):
         self.new_links = defaultdict(list)
         self.batch_ids = []
 
-        crawler.signals.connect(self.idle_spider, signals.spider_idle)
         crawler.signals.connect(self.close_spider, signals.spider_closed)
 
     def _get_config(self, crawler, key):
@@ -149,17 +148,6 @@ class HcfMiddleware(object):
                     yield item
             else:
                 yield item
-
-    def idle_spider(self, spider):
-        self._save_new_links()
-        self.fclient.flush()
-        self._delete_processed_ids()
-        has_new_requests = False
-        for request in self._get_new_requests():
-            self.crawler.engine.schedule(request, spider)
-            has_new_requests = True
-        if has_new_requests:
-            raise DontCloseSpider
 
     def close_spider(self, spider, reason):
         # Only store the results if the spider finished normally, if it
