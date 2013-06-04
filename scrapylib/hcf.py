@@ -81,8 +81,8 @@ class HcfMiddleware(object):
         hs_endpoint = crawler.settings.get("HS_ENDPOINT")
         hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
-        self.hs_project_frontier = self._get_config(crawler, "HS_FRONTIER")
-        self.hs_project_slot = self._get_config(crawler, "HS_SLOT")
+        self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
+        self.hs_slot = self._get_config(crawler, "HS_SLOT")
         # Max number of batches to read from the HCF within a single run.
         try:
             self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
@@ -94,7 +94,7 @@ class HcfMiddleware(object):
         self.project = self.hsclient.get_project(self.hs_projectid)
         self.fclient = self.project.frontier
 
-        self.new_links = defaultdict(list)
+        self.new_links_count = defaultdict(int)
         self.batch_ids = []
 
         crawler.signals.connect(self.close_spider, signals.spider_closed)
@@ -114,10 +114,10 @@ class HcfMiddleware(object):
 
     def process_start_requests(self, start_requests, spider):
 
-        self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_project_frontier)
+        self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_slot = getattr(spider, 'hs_slot', self.hs_project_slot)
+        self.hs_slot = getattr(spider, 'hs_slot', self.hs_slot)
         self._msg('Using HS_SLOT=%s' % self.hs_slot)
 
         has_new_requests = False
@@ -143,7 +143,11 @@ class HcfMiddleware(object):
                     fp = {'fp': request.url}
                     if hcf_params:
                         fp.update(hcf_params)
-                    self.new_links[slot].append(fp)
+                    # Save the new links as soon as possible using
+                    # the batch uploader
+                    fps = [{'fp': request.url}]
+                    self.fclient.add(self.hs_frontier, slot, fps)
+                    self.new_links_count[slot] += 1
                 else:
                     yield item
             else:
@@ -155,7 +159,7 @@ class HcfMiddleware(object):
         # were processed and it is better not to delete them from the frontier
         # (so they will be picked by another process).
         if reason == 'finished':
-            self._save_new_links()
+            self._save_new_links_count()
             self._delete_processed_ids()
 
         # If the reason is defined in the hs_start_job_on_reason list then start
@@ -184,12 +188,11 @@ class HcfMiddleware(object):
         self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
         self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
 
-    def _save_new_links(self):
+    def _save_new_links_count(self):
         """ Save the new extracted links into the HCF."""
-        for slot, fps in self.new_links.items():
-            self.fclient.add(self.hs_frontier, slot, fps)
-            self._msg('Stored %d new links in slot(%s)' % (len(fps), slot))
-        self.new_links = defaultdict(list)
+        for slot, link_count in self.new_links_count.items():
+            self._msg('Stored %d new links in slot(%s)' % (link_count, slot))
+        self.new_links_count = defaultdict(list)
 
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
