@@ -48,6 +48,9 @@ of the HCF middleware:
         fdata    data to be stored along with the fingerprint in the fingerprint set
         p    Priority - lower priority numbers are returned first. The default is 0
 
+The value of 'qdata' parameter could be retrieved later using
+``response.meta['hcf_params']['qdata']``.
+
 In order to determine to which slot save a new URL the middleware checks
 for the slot_callback method in the spider, this method has the next signature:
 
@@ -182,9 +185,9 @@ class HcfMiddleware(object):
         num_batches = 0
         num_links = 0
         for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_slot), 1):
-            for r in batch['requests']:
+            for fingerprint, data in batch['requests']:
                 num_links += 1
-                yield Request(r[0])
+                yield Request(url=fingerprint, meta={'hcf_params': {'qdata': data}})
             self.batch_ids.append(batch['id'])
             if num_batches >= self.hs_max_baches:
                 break
