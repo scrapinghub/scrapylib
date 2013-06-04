@@ -57,8 +57,8 @@ of the HCF middleware:
 The value of 'qdata' parameter could be retrieved later using
 ``response.meta['hcf_params']['qdata']``.
 
-In order to determine to which slot save a new URL the middleware checks
-for the slot_callback method in the spider, this method has the next signature:
+The spider can override the default slot assignation function by setting the
+spider slot_callback method to a function with the following signature:
 
    def slot_callback(request):
        ...
