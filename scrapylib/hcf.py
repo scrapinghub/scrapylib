@@ -19,7 +19,7 @@ And the next settings need to be defined:
     HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
-the spider attributes: "hs_frontier" and "hs_slot" respectively.
+the spider attributes: "hs_frontier" and "hs_consume_from_slot" respectively.
 
 The next optional settings can be defined:
 
@@ -142,8 +142,8 @@ class HcfMiddleware(object):
         self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_consume_from_slot = getattr(spider, 'hs_slot', self.hs_consume_from_slot)
-        self._msg('Using HS_SLOT=%s' % self.hs_consume_from_slot)
+        self.hs_consume_from_slot = getattr(spider, 'hs_consume_from_slot', self.hs_consume_from_slot)
+        self._msg('Using HS_CONSUME_FROM_SLOT=%s' % self.hs_consume_from_slot)
 
         has_new_requests = False
         for req in self._get_new_requests():
