@@ -54,7 +54,7 @@ The value of 'qdata' parameter could be retrieved later using
 In order to determine to which slot save a new URL the middleware checks
 for the slot_callback method in the spider, this method has the next signature:
 
-   def get_slot_callback(request):
+   def slot_callback(request):
        ...
        return slot
 
