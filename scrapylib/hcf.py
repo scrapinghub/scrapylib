@@ -16,7 +16,7 @@ And the next settings need to be defined:
     HS_AUTH     - API key
     HS_PROJECTID - Project ID in the panel.
     HS_FRONTIER  - Frontier name.
-    HS_SLOT      - Slot from where the spider will read new URLs.
+    HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
 the spider attributes: "hs_frontier" and "hs_slot" respectively.
@@ -26,8 +26,7 @@ The next optional settings can be defined:
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
                   The default value is provided by the python-hubstorage
                   package.
-    HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
-                     The default is 10.
+    HS_MAX_LINKS - Number of links to be read from the HCF, the default is 1000.
 
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
@@ -39,6 +38,9 @@ The next optional settings can be defined:
                              'closespider_pagecount'
 
                              The default is an empty list.
+
+    HS_START_JOB_NEW_PANEL - If True the jobs will be started in the new panel.
+                             The default is false.
 
     HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
                          use to store the new links. The default is 8.
@@ -57,8 +59,8 @@ of the HCF middleware:
 The value of 'qdata' parameter could be retrieved later using
 ``response.meta['hcf_params']['qdata']``.
 
-In order to determine to which slot save a new URL the middleware checks
-for the slot_callback method in the spider, this method has the next signature:
+The spider can override the default slot assignation function by setting the
+spider slot_callback method to a function with the following signature:
 
    def slot_callback(request):
        ...
@@ -67,12 +69,14 @@ for the slot_callback method in the spider, this method has the next signature:
 """
 import hashlib
 from collections import defaultdict
+from datetime import datetime
+from scrapinghub import Connection
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
-DEFAULT_MAX_BATCHES = 10
+DEFAULT_MAX_LINKS = 1000
 DEFAULT_HS_NUMBER_OF_SLOTS = 8
 
 
@@ -81,22 +85,27 @@ class HcfMiddleware(object):
     def __init__(self, crawler):
 
         self.crawler = crawler
-        hs_endpoint = crawler.settings.get("HS_ENDPOINT")
-        hs_auth = self._get_config(crawler, "HS_AUTH")
+        self.hs_endpoint = crawler.settings.get("HS_ENDPOINT")
+        self.hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
-        self.hs_slot = self._get_config(crawler, "HS_SLOT")
+        self.hs_consume_from_slot = self._get_config(crawler, "HS_CONSUME_FROM_SLOT")
         try:
             self.hs_number_of_slots = int(crawler.settings.get("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS))
         except ValueError:
             self.hs_number_of_slots = DEFAULT_HS_NUMBER_OF_SLOTS
         try:
-            self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
+            self.hs_max_links = int(crawler.settings.get("HS_MAX_LINKS", DEFAULT_MAX_LINKS))
         except ValueError:
-            self.hs_max_baches = DEFAULT_MAX_BATCHES
+            self.hs_max_links = DEFAULT_MAX_LINKS
         self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
+        self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
 
-        self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
+        if not self.hs_start_job_new_panel:
+            conn = Connection(self.hs_auth)
+            self.oldpanel_project = conn[self.hs_projectid]
+
+        self.hsclient = HubstorageClient(auth=self.hs_auth, endpoint=self.hs_endpoint)
         self.project = self.hsclient.get_project(self.hs_projectid)
         self.fclient = self.project.frontier
 
@@ -114,6 +123,16 @@ class HcfMiddleware(object):
     def _msg(self, msg):
         log.msg('(HCF) %s' % msg)
 
+    def _start_job(self, spider):
+        self._msg("Starting new job for: %s" % spider.name)
+        if self.hs_start_job_new_panel:
+            jobid = self.hsclient.start_job(projectid=self.hs_projectid,
+                                          spider=spider.name)
+        else:
+            jobid = self.oldpanel_project.schedule(spider.name, slot=self.hs_consume_from_slot,
+                                                   dummy=datetime.now())
+        self._msg("New job started: %s" % jobid)
+
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
@@ -123,8 +142,8 @@ class HcfMiddleware(object):
         self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_slot = getattr(spider, 'hs_slot', self.hs_slot)
-        self._msg('Using HS_SLOT=%s' % self.hs_slot)
+        self.hs_consume_from_slot = getattr(spider, 'hs_slot', self.hs_consume_from_slot)
+        self._msg('Using HS_SLOT=%s' % self.hs_consume_from_slot)
 
         has_new_requests = False
         for req in self._get_new_requests():
@@ -151,8 +170,7 @@ class HcfMiddleware(object):
                         fp.update(hcf_params)
                     # Save the new links as soon as possible using
                     # the batch uploader
-                    fps = [{'fp': request.url}]
-                    self.fclient.add(self.hs_frontier, slot, fps)
+                    self.fclient.add(self.hs_frontier, slot, [fp])
                     self.new_links_count[slot] += 1
                 else:
                     yield item
@@ -174,8 +192,7 @@ class HcfMiddleware(object):
         # then have the old spider start a new one to take its place in the slot.
         if reason in self.hs_start_job_on_reason:
             self._msg("Starting new job" + spider.name)
-            job = self.hsclient.start_job(projectid=self.hs_projectid,
-                                          spider=spider.name)
+            self._start_job(spider)
             self._msg("New job started: %s" % job)
         self.fclient.close()
         self.hsclient.close()
@@ -184,15 +201,15 @@ class HcfMiddleware(object):
         """ Get a new batch of links from the HCF."""
         num_batches = 0
         num_links = 0
-        for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_slot), 1):
+        for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_consume_from_slot), 1):
             for fingerprint, data in batch['requests']:
                 num_links += 1
                 yield Request(url=fingerprint, meta={'hcf_params': {'qdata': data}})
             self.batch_ids.append(batch['id'])
-            if num_batches >= self.hs_max_baches:
+            if num_links >= self.hs_max_links:
                 break
-        self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
-        self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
+        self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_consume_from_slot))
+        self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_consume_from_slot))
 
     def _save_new_links_count(self):
         """ Save the new extracted links into the HCF."""
@@ -202,9 +219,9 @@ class HcfMiddleware(object):
 
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
-        self.fclient.delete(self.hs_frontier, self.hs_slot, self.batch_ids)
+        self.fclient.delete(self.hs_frontier, self.hs_consume_from_slot, self.batch_ids)
         self._msg('Deleted %d processed batches in slot(%s)' % (len(self.batch_ids),
-                                                                self.hs_slot))
+                                                                self.hs_consume_from_slot))
         self.batch_ids = []
 
     def _get_slot(self, request):
