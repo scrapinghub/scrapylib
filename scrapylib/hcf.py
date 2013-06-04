@@ -40,6 +40,9 @@ The next optional settings can be defined:
 
                              The default is an empty list.
 
+    HS_START_JOB_NEW_PANEL - If True the jobs will be started in the new panel.
+                             The default is false.
+
     HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
                          use to store the new links. The default is 8.
 
@@ -67,6 +70,8 @@ spider slot_callback method to a function with the following signature:
 """
 import hashlib
 from collections import defaultdict
+from datetime import datetime
+from scrapinghub import Connection
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
@@ -81,8 +86,8 @@ class HcfMiddleware(object):
     def __init__(self, crawler):
 
         self.crawler = crawler
-        hs_endpoint = crawler.settings.get("HS_ENDPOINT")
-        hs_auth = self._get_config(crawler, "HS_AUTH")
+        self.hs_endpoint = crawler.settings.get("HS_ENDPOINT")
+        self.hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
         self.hs_slot = self._get_config(crawler, "HS_SLOT")
@@ -95,8 +100,13 @@ class HcfMiddleware(object):
         except ValueError:
             self.hs_max_baches = DEFAULT_MAX_BATCHES
         self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
+        self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
 
-        self.hsclient = HubstorageClient(auth=hs_auth, endpoint=hs_endpoint)
+        if not self.hs_start_job_new_panel:
+            conn = Connection(self.hs_auth)
+            self.oldpanel_project = conn[self.hs_projectid]
+
+        self.hsclient = HubstorageClient(auth=self.hs_auth, endpoint=self.hs_endpoint)
         self.project = self.hsclient.get_project(self.hs_projectid)
         self.fclient = self.project.frontier
 
@@ -113,6 +123,16 @@ class HcfMiddleware(object):
 
     def _msg(self, msg):
         log.msg('(HCF) %s' % msg)
+
+    def _start_job(self, spider):
+        self._msg("Starting new job for: %s" % spider.name)
+        if self.hs_start_job_new_panel:
+            jobid = self.hsclient.start_job(projectid=self.hs_projectid,
+                                          spider=spider.name)
+        else:
+            jobid = self.oldpanel_project.schedule(spider.name, slot=self.hs_slot,
+                                                   dummy=datetime.now())
+        self._msg("New job started: %s" % jobid)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -174,8 +194,7 @@ class HcfMiddleware(object):
         # then have the old spider start a new one to take its place in the slot.
         if reason in self.hs_start_job_on_reason:
             self._msg("Starting new job" + spider.name)
-            job = self.hsclient.start_job(projectid=self.hs_projectid,
-                                          spider=spider.name)
+            self._start_job(spider)
             self._msg("New job started: %s" % job)
         self.fclient.close()
         self.hsclient.close()
