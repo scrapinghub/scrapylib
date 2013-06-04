@@ -26,8 +26,7 @@ The next optional settings can be defined:
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
                   The default value is provided by the python-hubstorage
                   package.
-    HS_MAX_BATCHES - Number of batches to be read from the HCF in a single call.
-                     The default is 10.
+    HS_MAX_LINKS - Number of links to be read from the HCF, the default is 1000.
 
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
@@ -77,7 +76,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 from hubstorage import HubstorageClient
 
-DEFAULT_MAX_BATCHES = 10
+DEFAULT_MAX_LINKS = 1000
 DEFAULT_HS_NUMBER_OF_SLOTS = 8
 
 
@@ -96,9 +95,9 @@ class HcfMiddleware(object):
         except ValueError:
             self.hs_number_of_slots = DEFAULT_HS_NUMBER_OF_SLOTS
         try:
-            self.hs_max_baches = int(crawler.settings.get("HS_MAX_BATCHES", DEFAULT_MAX_BATCHES))
+            self.hs_max_links = int(crawler.settings.get("HS_MAX_LINKS", DEFAULT_MAX_LINKS))
         except ValueError:
-            self.hs_max_baches = DEFAULT_MAX_BATCHES
+            self.hs_max_links = DEFAULT_MAX_LINKS
         self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
         self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
 
@@ -207,7 +206,7 @@ class HcfMiddleware(object):
                 num_links += 1
                 yield Request(url=fingerprint, meta={'hcf_params': {'qdata': data}})
             self.batch_ids.append(batch['id'])
-            if num_batches >= self.hs_max_baches:
+            if num_links >= self.hs_max_links:
                 break
         self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_consume_from_slot))
         self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_consume_from_slot))
