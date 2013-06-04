@@ -16,7 +16,7 @@ And the next settings need to be defined:
     HS_AUTH     - API key
     HS_PROJECTID - Project ID in the panel.
     HS_FRONTIER  - Frontier name.
-    HS_SLOT      - Slot from where the spider will read new URLs.
+    HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
 the spider attributes: "hs_frontier" and "hs_slot" respectively.
@@ -90,7 +90,7 @@ class HcfMiddleware(object):
         self.hs_auth = self._get_config(crawler, "HS_AUTH")
         self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
         self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
-        self.hs_slot = self._get_config(crawler, "HS_SLOT")
+        self.hs_consume_from_slot = self._get_config(crawler, "HS_CONSUME_FROM_SLOT")
         try:
             self.hs_number_of_slots = int(crawler.settings.get("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS))
         except ValueError:
@@ -130,7 +130,7 @@ class HcfMiddleware(object):
             jobid = self.hsclient.start_job(projectid=self.hs_projectid,
                                           spider=spider.name)
         else:
-            jobid = self.oldpanel_project.schedule(spider.name, slot=self.hs_slot,
+            jobid = self.oldpanel_project.schedule(spider.name, slot=self.hs_consume_from_slot,
                                                    dummy=datetime.now())
         self._msg("New job started: %s" % jobid)
 
@@ -143,8 +143,8 @@ class HcfMiddleware(object):
         self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_slot = getattr(spider, 'hs_slot', self.hs_slot)
-        self._msg('Using HS_SLOT=%s' % self.hs_slot)
+        self.hs_consume_from_slot = getattr(spider, 'hs_slot', self.hs_consume_from_slot)
+        self._msg('Using HS_SLOT=%s' % self.hs_consume_from_slot)
 
         has_new_requests = False
         for req in self._get_new_requests():
@@ -203,15 +203,15 @@ class HcfMiddleware(object):
         """ Get a new batch of links from the HCF."""
         num_batches = 0
         num_links = 0
-        for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_slot), 1):
+        for num_batches, batch in enumerate(self.fclient.read(self.hs_frontier, self.hs_consume_from_slot), 1):
             for fingerprint, data in batch['requests']:
                 num_links += 1
                 yield Request(url=fingerprint, meta={'hcf_params': {'qdata': data}})
             self.batch_ids.append(batch['id'])
             if num_batches >= self.hs_max_baches:
                 break
-        self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_slot))
-        self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_slot))
+        self._msg('Read %d new batches from slot(%s)' % (num_batches, self.hs_consume_from_slot))
+        self._msg('Read %d new links from slot(%s)' % (num_links, self.hs_consume_from_slot))
 
     def _save_new_links_count(self):
         """ Save the new extracted links into the HCF."""
@@ -221,9 +221,9 @@ class HcfMiddleware(object):
 
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
-        self.fclient.delete(self.hs_frontier, self.hs_slot, self.batch_ids)
+        self.fclient.delete(self.hs_frontier, self.hs_consume_from_slot, self.batch_ids)
         self._msg('Deleted %d processed batches in slot(%s)' % (len(self.batch_ids),
-                                                                self.hs_slot))
+                                                                self.hs_consume_from_slot))
         self.batch_ids = []
 
     def _get_slot(self, request):
