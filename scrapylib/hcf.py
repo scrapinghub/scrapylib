@@ -171,8 +171,7 @@ class HcfMiddleware(object):
                         fp.update(hcf_params)
                     # Save the new links as soon as possible using
                     # the batch uploader
-                    fps = [{'fp': request.url}]
-                    self.fclient.add(self.hs_frontier, slot, fps)
+                    self.fclient.add(self.hs_frontier, slot, [fp])
                     self.new_links_count[slot] += 1
                 else:
                     yield item
