@@ -143,13 +143,14 @@ class HcfMiddleware(object):
         self.hs_consume_from_slot = getattr(spider, 'hs_consume_from_slot', self.hs_consume_from_slot)
         self._msg('Using HS_CONSUME_FROM_SLOT=%s' % self.hs_consume_from_slot)
 
-        has_new_requests = False
+        self.has_new_requests = False
         for req in self._get_new_requests():
-            has_new_requests = True
+            self.has_new_requests = True
             yield req
 
         # if there are no links in the hcf, use the start_requests
-        if not has_new_requests:
+        # unless this is not the first job.
+        if not self.has_new_requests and not getattr(spider, 'dummy', None):
             self._msg('Using start_requests')
             for r in start_requests:
                 yield r
@@ -184,14 +185,19 @@ class HcfMiddleware(object):
             self._save_new_links_count()
             self._delete_processed_ids()
 
-        # If the reason is defined in the hs_start_job_on_reason list then start
-        # a new job right after this spider is finished. The idea is to limit
-        # every spider runtime (either via itemcount, pagecount or timeout) and
-        # then have the old spider start a new one to take its place in the slot.
-        if self.hs_start_job_enabled and reason in self.hs_start_job_on_reason:
-            self._start_job(spider)
+        # Close the frontier client in order to make sure that all the new links
+        # are stored.
         self.fclient.close()
         self.hsclient.close()
+
+        # If the reason is defined in the hs_start_job_on_reason list then start
+        # a new job right after this spider is finished.
+        if self.hs_start_job_enabled and reason in self.hs_start_job_on_reason:
+
+            # Start the new job if this job had requests from the HCF or it
+            # was the first job.
+            if self.has_new_requests or not getattr(spider, 'dummy', None):
+                self._start_job(spider)
 
     def _get_new_requests(self):
         """ Get a new batch of links from the HCF."""
