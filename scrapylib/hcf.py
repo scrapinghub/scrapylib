@@ -65,6 +65,7 @@ spider slot_callback method to a function with the following signature:
 
 """
 import hashlib
+import logging
 from collections import defaultdict
 from datetime import datetime
 from scrapinghub import Connection
@@ -111,6 +112,9 @@ class HcfMiddleware(object):
         self.batch_ids = []
 
         crawler.signals.connect(self.close_spider, signals.spider_closed)
+
+        # Make sure the logger for hubstorage.batchuploader is configured
+        logging.basicConfig()
 
     def _get_config(self, crawler, key):
         value = crawler.settings.get(key)
