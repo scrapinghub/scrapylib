@@ -19,28 +19,25 @@ And the next settings need to be defined:
     HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
 Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
-the spider attributes: "hs_frontier" and "hs_slot" respectively.
+the spider attributes: "hs_frontier" and "hs_consume_from_slot" respectively.
 
 The next optional settings can be defined:
 
     HS_ENDPOINT - URL to the API endpoint, i.e: http://localhost:8003.
                   The default value is provided by the python-hubstorage
                   package.
+
     HS_MAX_LINKS - Number of links to be read from the HCF, the default is 1000.
+
+    HS_START_JOB_ENABLED - Enable whether to start a new job when the spider
+                           finishes. The default is False
 
     HS_START_JOB_ON_REASON - This is a list of closing reasons, if the spider ends
                              with any of these reasons a new job will be started
-                             for the same slot. Some possible reasons are:
-
-                             'finished'
-                             'closespider_timeout'
-                             'closespider_itemcount'
-                             'closespider_pagecount'
-
-                             The default is an empty list.
+                             for the same slot. The default is ['finished']
 
     HS_START_JOB_NEW_PANEL - If True the jobs will be started in the new panel.
-                             The default is false.
+                             The default is False.
 
     HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
                          use to store the new links. The default is 8.
@@ -98,7 +95,8 @@ class HcfMiddleware(object):
             self.hs_max_links = int(crawler.settings.get("HS_MAX_LINKS", DEFAULT_MAX_LINKS))
         except ValueError:
             self.hs_max_links = DEFAULT_MAX_LINKS
-        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", [])
+        self.hs_start_job_enabled = crawler.settings.get("HS_START_JOB_ENABLED", False)
+        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", ['finished'])
         self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
 
         if not self.hs_start_job_new_panel:
@@ -120,8 +118,8 @@ class HcfMiddleware(object):
             raise NotConfigured('%s not found' % key)
         return value
 
-    def _msg(self, msg):
-        log.msg('(HCF) %s' % msg)
+    def _msg(self, msg, level=log.INFO):
+        log.msg('(HCF) %s' % msg, level)
 
     def _start_job(self, spider):
         self._msg("Starting new job for: %s" % spider.name)
@@ -142,16 +140,17 @@ class HcfMiddleware(object):
         self.hs_frontier = getattr(spider, 'hs_frontier', self.hs_frontier)
         self._msg('Using HS_FRONTIER=%s' % self.hs_frontier)
 
-        self.hs_consume_from_slot = getattr(spider, 'hs_slot', self.hs_consume_from_slot)
-        self._msg('Using HS_SLOT=%s' % self.hs_consume_from_slot)
+        self.hs_consume_from_slot = getattr(spider, 'hs_consume_from_slot', self.hs_consume_from_slot)
+        self._msg('Using HS_CONSUME_FROM_SLOT=%s' % self.hs_consume_from_slot)
 
-        has_new_requests = False
+        self.has_new_requests = False
         for req in self._get_new_requests():
-            has_new_requests = True
+            self.has_new_requests = True
             yield req
 
         # if there are no links in the hcf, use the start_requests
-        if not has_new_requests:
+        # unless this is not the first job.
+        if not self.has_new_requests and not getattr(spider, 'dummy', None):
             self._msg('Using start_requests')
             for r in start_requests:
                 yield r
@@ -161,19 +160,23 @@ class HcfMiddleware(object):
         for item in result:
             if isinstance(item, Request):
                 request = item
-                if (request.method == 'GET' and  # XXX: Only GET support for now.
-                    request.meta.get('use_hcf', False)):
-                    slot = slot_callback(request)
-                    hcf_params = request.meta.get('hcf_params')
-                    fp = {'fp': request.url}
-                    if hcf_params:
-                        fp.update(hcf_params)
-                    # Save the new links as soon as possible using
-                    # the batch uploader
-                    self.fclient.add(self.hs_frontier, slot, [fp])
-                    self.new_links_count[slot] += 1
+                if request.meta.get('use_hcf', False):
+                    if request.method == 'GET':  # XXX: Only GET support for now.
+                        slot = slot_callback(request)
+                        hcf_params = request.meta.get('hcf_params')
+                        fp = {'fp': request.url}
+                        if hcf_params:
+                            fp.update(hcf_params)
+                        # Save the new links as soon as possible using
+                        # the batch uploader
+                        self.fclient.add(self.hs_frontier, slot, [fp])
+                        self.new_links_count[slot] += 1
+                    else:
+                        self._msg("'use_hcf' meta key is not supported for non GET requests (%s)" % request.url,
+                                  log.ERROR)
+                        yield request
                 else:
-                    yield item
+                    yield request
             else:
                 yield item
 
@@ -186,16 +189,19 @@ class HcfMiddleware(object):
             self._save_new_links_count()
             self._delete_processed_ids()
 
-        # If the reason is defined in the hs_start_job_on_reason list then start
-        # a new job right after this spider is finished. The idea is to limit
-        # every spider runtime (either via itemcount, pagecount or timeout) and
-        # then have the old spider start a new one to take its place in the slot.
-        if reason in self.hs_start_job_on_reason:
-            self._msg("Starting new job" + spider.name)
-            self._start_job(spider)
-            self._msg("New job started: %s" % job)
+        # Close the frontier client in order to make sure that all the new links
+        # are stored.
         self.fclient.close()
         self.hsclient.close()
+
+        # If the reason is defined in the hs_start_job_on_reason list then start
+        # a new job right after this spider is finished.
+        if self.hs_start_job_enabled and reason in self.hs_start_job_on_reason:
+
+            # Start the new job if this job had requests from the HCF or it
+            # was the first job.
+            if self.has_new_requests or not getattr(spider, 'dummy', None):
+                self._start_job(spider)
 
     def _get_new_requests(self):
         """ Get a new batch of links from the HCF."""
