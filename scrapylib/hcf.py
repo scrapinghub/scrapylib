@@ -189,9 +189,7 @@ class HcfMiddleware(object):
         # every spider runtime (either via itemcount, pagecount or timeout) and
         # then have the old spider start a new one to take its place in the slot.
         if self.hs_start_job_enabled and reason in self.hs_start_job_on_reason:
-            self._msg("Starting new job" + spider.name)
             self._start_job(spider)
-            self._msg("New job started: %s" % job)
         self.fclient.close()
         self.hsclient.close()
 
