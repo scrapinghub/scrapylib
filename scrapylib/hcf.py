@@ -118,8 +118,8 @@ class HcfMiddleware(object):
             raise NotConfigured('%s not found' % key)
         return value
 
-    def _msg(self, msg):
-        log.msg('(HCF) %s' % msg)
+    def _msg(self, msg, level=log.INFO):
+        log.msg('(HCF) %s' % msg, level)
 
     def _start_job(self, spider):
         self._msg("Starting new job for: %s" % spider.name)
@@ -160,19 +160,23 @@ class HcfMiddleware(object):
         for item in result:
             if isinstance(item, Request):
                 request = item
-                if (request.method == 'GET' and  # XXX: Only GET support for now.
-                    request.meta.get('use_hcf', False)):
-                    slot = slot_callback(request)
-                    hcf_params = request.meta.get('hcf_params')
-                    fp = {'fp': request.url}
-                    if hcf_params:
-                        fp.update(hcf_params)
-                    # Save the new links as soon as possible using
-                    # the batch uploader
-                    self.fclient.add(self.hs_frontier, slot, [fp])
-                    self.new_links_count[slot] += 1
+                if request.meta.get('use_hcf', False):
+                    if request.method == 'GET':  # XXX: Only GET support for now.
+                        slot = slot_callback(request)
+                        hcf_params = request.meta.get('hcf_params')
+                        fp = {'fp': request.url}
+                        if hcf_params:
+                            fp.update(hcf_params)
+                        # Save the new links as soon as possible using
+                        # the batch uploader
+                        self.fclient.add(self.hs_frontier, slot, [fp])
+                        self.new_links_count[slot] += 1
+                    else:
+                        self._msg("'use_hcf' meta key is not supported for non GET requests (%s)" % request.url,
+                                  log.ERROR)
+                        yield request
                 else:
-                    yield item
+                    yield request
             else:
                 yield item
 
