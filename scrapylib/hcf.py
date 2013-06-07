@@ -108,7 +108,7 @@ class HcfMiddleware(object):
         self.project = self.hsclient.get_project(self.hs_projectid)
         self.fclient = self.project.frontier
 
-        self.new_links_count = defaultdict(int)
+        self.new_links = defaultdict(set)
         self.batch_ids = []
 
         crawler.signals.connect(self.close_spider, signals.spider_closed)
@@ -167,14 +167,15 @@ class HcfMiddleware(object):
                 if request.meta.get('use_hcf', False):
                     if request.method == 'GET':  # XXX: Only GET support for now.
                         slot = slot_callback(request)
-                        hcf_params = request.meta.get('hcf_params')
-                        fp = {'fp': request.url}
-                        if hcf_params:
-                            fp.update(hcf_params)
-                        # Save the new links as soon as possible using
-                        # the batch uploader
-                        self.fclient.add(self.hs_frontier, slot, [fp])
-                        self.new_links_count[slot] += 1
+                        if not request.url in self.new_links:
+                            hcf_params = request.meta.get('hcf_params')
+                            fp = {'fp': request.url}
+                            if hcf_params:
+                                fp.update(hcf_params)
+                            # Save the new links as soon as possible using
+                            # the batch uploader
+                            self.fclient.add(self.hs_frontier, slot, [fp])
+                            self.new_links[slot].add(request.url)
                     else:
                         self._msg("'use_hcf' meta key is not supported for non GET requests (%s)" % request.url,
                                   log.ERROR)
@@ -223,9 +224,9 @@ class HcfMiddleware(object):
 
     def _save_new_links_count(self):
         """ Save the new extracted links into the HCF."""
-        for slot, link_count in self.new_links_count.items():
-            self._msg('Stored %d new links in slot(%s)' % (link_count, slot))
-        self.new_links_count = defaultdict(list)
+        for slot, new_links in self.new_links.items():
+            self._msg('Stored %d new links in slot(%s)' % (len(new_links), slot))
+        self.new_links = defaultdict(set)
 
     def _delete_processed_ids(self):
         """ Delete in the HCF the ids of the processed batches."""
