@@ -81,24 +81,17 @@ DEFAULT_HS_NUMBER_OF_SLOTS = 8
 class HcfMiddleware(object):
 
     def __init__(self, crawler):
-
-        self.crawler = crawler
-        self.hs_endpoint = crawler.settings.get("HS_ENDPOINT")
-        self.hs_auth = self._get_config(crawler, "HS_AUTH")
-        self.hs_projectid = self._get_config(crawler, "HS_PROJECTID")
-        self.hs_frontier = self._get_config(crawler, "HS_FRONTIER")
-        self.hs_consume_from_slot = self._get_config(crawler, "HS_CONSUME_FROM_SLOT")
-        try:
-            self.hs_number_of_slots = int(crawler.settings.get("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS))
-        except ValueError:
-            self.hs_number_of_slots = DEFAULT_HS_NUMBER_OF_SLOTS
-        try:
-            self.hs_max_links = int(crawler.settings.get("HS_MAX_LINKS", DEFAULT_MAX_LINKS))
-        except ValueError:
-            self.hs_max_links = DEFAULT_MAX_LINKS
-        self.hs_start_job_enabled = crawler.settings.get("HS_START_JOB_ENABLED", False)
-        self.hs_start_job_on_reason = crawler.settings.get("HS_START_JOB_ON_REASON", ['finished'])
-        self.hs_start_job_new_panel = crawler.settings.get("HS_START_JOB_NEW_PANEL", False)
+        settings = crawler.settings
+        self.hs_endpoint = settings.get("HS_ENDPOINT")
+        self.hs_auth = self._get_config(settings, "HS_AUTH")
+        self.hs_projectid = self._get_config(settings, "HS_PROJECTID")
+        self.hs_frontier = self._get_config(settings, "HS_FRONTIER")
+        self.hs_consume_from_slot = self._get_config(settings, "HS_CONSUME_FROM_SLOT")
+        self.hs_number_of_slots = settings.getint("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS)
+        self.hs_max_links = settings.getint("HS_MAX_LINKS", DEFAULT_MAX_LINKS)
+        self.hs_start_job_enabled = settings.getbool("HS_START_JOB_ENABLED", False)
+        self.hs_start_job_on_reason = settings.getlist("HS_START_JOB_ON_REASON", ['finished'])
+        self.hs_start_job_new_panel = settings.getbool("HS_START_JOB_NEW_PANEL", False)
 
         if not self.hs_start_job_new_panel:
             conn = Connection(self.hs_auth)
@@ -116,8 +109,8 @@ class HcfMiddleware(object):
         # Make sure the logger for hubstorage.batchuploader is configured
         logging.basicConfig()
 
-    def _get_config(self, crawler, key):
-        value = crawler.settings.get(key)
+    def _get_config(self, settings, key):
+        value = settings.get(key)
         if not value:
             raise NotConfigured('%s not found' % key)
         return value
