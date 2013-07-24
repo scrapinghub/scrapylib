@@ -36,9 +36,6 @@ The next optional settings can be defined:
                              with any of these reasons a new job will be started
                              for the same slot. The default is ['finished']
 
-    HS_START_JOB_NEW_PANEL - If True the jobs will be started in the new panel.
-                             The default is False.
-
     HS_NUMBER_OF_SLOTS - This is the number of slots that the middleware will
                          use to store the new links. The default is 8.
 
@@ -91,11 +88,9 @@ class HcfMiddleware(object):
         self.hs_max_links = settings.getint("HS_MAX_LINKS", DEFAULT_MAX_LINKS)
         self.hs_start_job_enabled = settings.getbool("HS_START_JOB_ENABLED", False)
         self.hs_start_job_on_reason = settings.getlist("HS_START_JOB_ON_REASON", ['finished'])
-        self.hs_start_job_new_panel = settings.getbool("HS_START_JOB_NEW_PANEL", False)
 
-        if not self.hs_start_job_new_panel:
-            conn = Connection(self.hs_auth)
-            self.oldpanel_project = conn[self.hs_projectid]
+        conn = Connection(self.hs_auth)
+        self.panel_project = conn[self.hs_projectid]
 
         self.hsclient = HubstorageClient(auth=self.hs_auth, endpoint=self.hs_endpoint)
         self.project = self.hsclient.get_project(self.hs_projectid)
@@ -120,12 +115,9 @@ class HcfMiddleware(object):
 
     def _start_job(self, spider):
         self._msg("Starting new job for: %s" % spider.name)
-        if self.hs_start_job_new_panel:
-            jobid = self.hsclient.start_job(projectid=self.hs_projectid,
-                                          spider=spider.name)
-        else:
-            jobid = self.oldpanel_project.schedule(spider.name, slot=self.hs_consume_from_slot,
-                                                   dummy=datetime.now())
+        jobid = self.panel_project.schedule(spider.name,
+                                               slot=self.hs_consume_from_slot,
+                                               dummy=datetime.now())
         self._msg("New job started: %s" % jobid)
 
     @classmethod
