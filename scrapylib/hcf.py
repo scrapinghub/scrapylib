@@ -152,7 +152,7 @@ class HcfMiddleware(object):
                 if request.meta.get('use_hcf', False):
                     if request.method == 'GET':  # XXX: Only GET support for now.
                         slot = slot_callback(request)
-                        if not request.url in self.new_links:
+                        if not request.url in self.new_links[slot]:
                             hcf_params = request.meta.get('hcf_params')
                             fp = {'fp': request.url}
                             if hcf_params:
