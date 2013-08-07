@@ -18,7 +18,7 @@ And the next settings need to be defined:
     HS_FRONTIER  - Frontier name.
     HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
-Note that HS_FRONTIER and HS_SLOT can be overriden from inside a spider using
+Note that HS_FRONTIER and HS_CONSUME_FROM_SLOT can be overriden from inside a spider using
 the spider attributes: "hs_frontier" and "hs_consume_from_slot" respectively.
 
 The next optional settings can be defined:
@@ -117,7 +117,7 @@ class HcfMiddleware(object):
     def _start_job(self, spider):
         self._msg("Starting new job for: %s" % spider.name)
         jobid = self.panel_project.schedule(spider.name,
-                                               slot=self.hs_consume_from_slot,
+                                               hs_consume_from_slot=self.hs_consume_from_slot,
                                                dummy=datetime.now())
         self._msg("New job started: %s" % jobid)
 
