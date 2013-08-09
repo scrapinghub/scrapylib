@@ -14,7 +14,7 @@ SPIDER_MIDDLEWARES = {
 And the next settings need to be defined:
 
     HS_AUTH     - API key
-    HS_PROJECTID - Project ID in the panel.
+    HS_PROJECTID - Project ID in the dash (not needed if the spider is ran on dash)
     HS_FRONTIER  - Frontier name.
     HS_CONSUME_FROM_SLOT - Slot from where the spider will read new URLs.
 
@@ -61,6 +61,7 @@ spider slot_callback method to a function with the following signature:
        return slot
 
 """
+import os
 import hashlib
 import logging
 from collections import defaultdict
@@ -81,7 +82,7 @@ class HcfMiddleware(object):
         settings = crawler.settings
         self.hs_endpoint = settings.get("HS_ENDPOINT")
         self.hs_auth = self._get_config(settings, "HS_AUTH")
-        self.hs_projectid = self._get_config(settings, "HS_PROJECTID")
+        self.hs_projectid = self._get_config(settings, "HS_PROJECTID", os.environ.get('SCRAPY_PROJECT_ID'))
         self.hs_frontier = self._get_config(settings, "HS_FRONTIER")
         self.hs_consume_from_slot = self._get_config(settings, "HS_CONSUME_FROM_SLOT")
         self.hs_number_of_slots = settings.getint("HS_NUMBER_OF_SLOTS", DEFAULT_HS_NUMBER_OF_SLOTS)
@@ -104,8 +105,8 @@ class HcfMiddleware(object):
         # Make sure the logger for hubstorage.batchuploader is configured
         logging.basicConfig()
 
-    def _get_config(self, settings, key):
-        value = settings.get(key)
+    def _get_config(self, settings, key, default=None):
+        value = settings.get(key, default)
         if not value:
             raise NotConfigured('%s not found' % key)
         return value
