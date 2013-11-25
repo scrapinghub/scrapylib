@@ -22,4 +22,4 @@ deploy:
     secure: iKVlMlKSr+LOuCCMMOqL65aYjNRy3k1Zb4d7NRN0JpWS5DGau8G8cEhJ1dY4uyc/DNKVJmd939OiLBsUqqCmz09+ozen/YrRNjEZS5lOwBNfhpiCESkbOjcInV1PQgx2XfuHGp8O/9vxtXjjH9WE9CabQ+8Zg5/rMMvXizT4/O4=
   on:
     tags: true
-    repo: scrapinghub/python-scrapinghub
+    repo: scrapinghub/scrapylib
