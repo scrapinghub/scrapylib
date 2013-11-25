@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 setup(name='scrapylib',
-      version='0.2',
+      version='1.0',
       license='BSD',
       description='Scrapy helper functions and processors',
       author='Scrapinghub',
