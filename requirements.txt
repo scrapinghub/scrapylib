@@ -1,0 +1,5 @@
+boto
+Scrapy
+scrapinghub
+hubstorage
+python-dateutil
