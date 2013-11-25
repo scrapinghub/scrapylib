@@ -10,6 +10,8 @@ env:
 matrix:
   allow_failures:
   - env: TOXENV=py33
+before_install:
+- sudo apt-get install language-pack-fr
 install:
 - pip install -M tox
 script: tox
