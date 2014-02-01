@@ -114,12 +114,15 @@ class HcfMiddleware(object):
     def _msg(self, msg, level=log.INFO):
         log.msg('(HCF) %s' % msg, level)
 
-    def _start_job(self, spider):
+    def start_job(self, spider):
         self._msg("Starting new job for: %s" % spider.name)
-        jobid = self.panel_project.schedule(spider.name,
-                                               hs_consume_from_slot=self.hs_consume_from_slot,
-                                               dummy=datetime.now())
+        jobid = self.panel_project.schedule(
+            spider.name,
+            hs_consume_from_slot=self.hs_consume_from_slot,
+            dummy=datetime.now()
+        )
         self._msg("New job started: %s" % jobid)
+        return jobid
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -192,7 +195,7 @@ class HcfMiddleware(object):
             # Start the new job if this job had requests from the HCF or it
             # was the first job.
             if self.has_new_requests or not getattr(spider, 'dummy', None):
-                self._start_job(spider)
+                self.start_job(spider)
 
     def _get_new_requests(self):
         """ Get a new batch of links from the HCF."""

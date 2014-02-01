@@ -7,3 +7,5 @@
 scrapylib\.egg-info
 build/
 dist/
+.idea/
+.tox/
