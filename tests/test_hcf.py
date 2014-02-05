@@ -1,6 +1,6 @@
 import os
 import hashlib
-from unittest import TestCase
+import unittest
 
 from scrapy.http import Request, Response
 from scrapy.spider import BaseSpider
@@ -9,22 +9,23 @@ from scrapylib.hcf import HcfMiddleware
 from scrapy.exceptions import NotConfigured, DontCloseSpider
 from hubstorage import HubstorageClient
 
+HS_ENDPOINT = os.getenv('HS_ENDPOINT', 'http://localhost:8003')
+HS_AUTH = os.getenv('HS_AUTH')
 
-class HcfTestCase(TestCase):
+@unittest.skipUnless(HS_AUTH, 'No valid hubstorage credentials set')
+class HcfTestCase(unittest.TestCase):
 
     hcf_cls = HcfMiddleware
 
     projectid = '2222222'
     spidername = 'hs-test-spider'
-    endpoint = os.getenv('HS_ENDPOINT', 'http://localhost:8003')
-    auth = os.getenv('HS_AUTH', 'useavalidkey')
     frontier = 'test'
     slot = '0'
     number_of_slots = 1
 
     @classmethod
     def setUpClass(cls):
-        cls.hsclient = HubstorageClient(auth=cls.auth, endpoint=cls.endpoint)
+        cls.hsclient = HubstorageClient(auth=HS_AUTH, endpoint=HS_ENDPOINT)
         cls.project = cls.hsclient.get_project(cls.projectid)
         cls.fclient = cls.project.frontier
 
