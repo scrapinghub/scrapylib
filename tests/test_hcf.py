@@ -25,7 +25,9 @@ class HcfTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.hsclient = HubstorageClient(auth=HS_AUTH, endpoint=HS_ENDPOINT)
+        cls.endpoint = HS_ENDPOINT
+        cls.auth = HS_AUTH
+        cls.hsclient = HubstorageClient(auth=cls.auth, endpoint=cls.endpoint)
         cls.project = cls.hsclient.get_project(cls.projectid)
         cls.fclient = cls.project.frontier
 
