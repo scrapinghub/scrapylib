@@ -10,6 +10,7 @@ env:
 matrix:
   allow_failures:
   - env: TOXENV=py33
+  - env: TOXENV=pypy
 before_install:
 - sudo apt-get update -qq && sudo apt-get --reinstall install -qy language-pack-fr
 install:
