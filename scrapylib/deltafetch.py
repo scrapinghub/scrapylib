@@ -21,10 +21,11 @@ class DeltaFetch(object):
     * DELTAFETCH_ENABLED - to enable (or disable) this extension
     * DELTAFETCH_DIR - directory where to store state
     * DELTAFETCH_DBM_MODULE - which DBM module to use for storage
+    * DELTAFETCH_RESET - reset the state, clearing out all seen requests
 
     Supported spider arguments:
 
-    * deltafetch_reset - reset the state, clearing out all seen requests
+    * deltafetch_reset - same effect as DELTAFETCH_RESET setting
 
     Supported request meta keys:
 
