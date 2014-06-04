@@ -16,7 +16,6 @@ class SplitVariantsMiddleware(object):
         return cls()
 
     def process_spider_output(self, response, result, spider):
-
         for r in result:
             if isinstance(r, DictItem) and "variants" in r:
                 variants = r.pop("variants")
