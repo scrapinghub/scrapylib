@@ -6,11 +6,12 @@ from scrapy.http import Request, Response
 from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 from scrapylib.hcf import HcfMiddleware
-from scrapy.exceptions import NotConfigured, DontCloseSpider
+from scrapy.exceptions import NotConfigured
 from hubstorage import HubstorageClient
 
 HS_ENDPOINT = os.getenv('HS_ENDPOINT', 'http://localhost:8003')
 HS_AUTH = os.getenv('HS_AUTH')
+
 
 @unittest.skipUnless(HS_AUTH, 'No valid hubstorage credentials set')
 class HcfTestCase(unittest.TestCase):
@@ -222,4 +223,3 @@ class HcfTestCase(unittest.TestCase):
 
         # Simulate close spider
         hcf.close_spider(self.spider, 'finished')
-

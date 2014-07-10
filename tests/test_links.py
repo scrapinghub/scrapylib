@@ -1,17 +1,23 @@
 import unittest
+
 from scrapylib.links import follow_links
 from scrapy.http import Request
+
 
 class LinkMock(object):
     def __init__(self, url):
         self.url = url
 
+
 class LinkExtractorMock(object):
+
     def extract_links(self, response):
         return [LinkMock(url=x) for x in response.split('|')]
 
+
 def some_callback():
     pass
+
 
 class TestLinks(unittest.TestCase):
 

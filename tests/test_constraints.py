@@ -1,4 +1,5 @@
 import unittest
+
 from scrapylib.constraints import RequiredFields, IsType, IsNumber, IsPrice, MaxLen, MinLen
 
 
@@ -14,6 +15,7 @@ class RequiredFieldsTest(unittest.TestCase):
     def test_fail(self):
         self.assertRaises(AssertionError, RequiredFields('list', 'xxx'), self.item)
 
+
 class IsTypeTest(unittest.TestCase):
 
     def setUp(self):
@@ -28,6 +30,7 @@ class IsTypeTest(unittest.TestCase):
         self.assertRaises(AssertionError, IsType(basestring, 'list'), self.item)
         self.assertRaises(AssertionError, IsType(list, 'str'), self.item)
 
+
 class IsNumberTest(unittest.TestCase):
 
     def setUp(self):
@@ -39,6 +42,7 @@ class IsNumberTest(unittest.TestCase):
 
     def test_fail(self):
         self.assertRaises(AssertionError, IsNumber('name'), self.item)
+
 
 class IsPriceTest(unittest.TestCase):
 
@@ -52,6 +56,7 @@ class IsPriceTest(unittest.TestCase):
     def test_fail(self):
         self.assertRaises(AssertionError, IsPrice('name'), self.item)
 
+
 class MaxLenTest(unittest.TestCase):
 
     def setUp(self):
@@ -63,6 +68,7 @@ class MaxLenTest(unittest.TestCase):
 
     def test_fail(self):
         self.assertRaises(AssertionError, MaxLen(8, 'other'), self.item)
+
 
 class MinLenTest(MaxLenTest):
 
