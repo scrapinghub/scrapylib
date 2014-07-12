@@ -13,7 +13,7 @@ matrix:
   - env: TOXENV=pypy
 before_install:
 - "./.travis-workarounds.sh"
-- sudo apt-get --reinstall install -qy language-pack-fr
+- sudo apt-get update -qq && sudo apt-get --reinstall install -qy language-pack-fr
 install:
 - pip install -U tox
 script: tox
