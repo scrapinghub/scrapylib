@@ -1,7 +1,7 @@
 import re, os
 from unittest import TestCase
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 from scrapy.item import DictItem, Field
 from scrapy.http import HtmlResponse
@@ -21,7 +21,7 @@ class MagicFieldsTest(TestCase):
     
     def setUp(self):
         self.environ = os.environ.copy()
-        self.spider = BaseSpider('myspider', arg1='val1', start_urls = ["http://example.com"])
+        self.spider = Spider('myspider', arg1='val1', start_urls = ["http://example.com"])
         def _log(x):
             print x
         self.spider.log = _log

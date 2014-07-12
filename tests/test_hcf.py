@@ -3,7 +3,7 @@ import hashlib
 import unittest
 
 from scrapy.http import Request, Response
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 from scrapylib.hcf import HcfMiddleware
 from scrapy.exceptions import NotConfigured, DontCloseSpider
@@ -37,7 +37,7 @@ class HcfTestCase(unittest.TestCase):
         cls.hsclient.close()
 
     def setUp(self):
-        class TestSpider(BaseSpider):
+        class TestSpider(Spider):
             name = self.spidername
             start_urls = [
                 'http://www.example.com/'

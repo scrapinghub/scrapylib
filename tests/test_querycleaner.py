@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from scrapy.http import Request, Response
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 from scrapylib.querycleaner import QueryCleanerMiddleware
 from scrapy.exceptions import NotConfigured
@@ -11,7 +11,7 @@ class QueryCleanerTestCase(TestCase):
     mwcls = QueryCleanerMiddleware
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
 
     def test_not_loaded(self):
         crawler = get_crawler({})
