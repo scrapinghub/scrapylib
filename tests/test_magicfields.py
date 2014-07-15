@@ -8,6 +8,7 @@ from scrapy.http import HtmlResponse
 
 from scrapylib.magicfields import _format, MagicFieldsMiddleware
 
+
 class TestItem(DictItem):
     fields = {
         'url': Field(),
@@ -17,15 +18,18 @@ class TestItem(DictItem):
         'sku': Field(),
     }
 
+
 class MagicFieldsTest(TestCase):
-    
+
     def setUp(self):
         self.environ = os.environ.copy()
         self.spider = Spider('myspider', arg1='val1', start_urls = ["http://example.com"])
+
         def _log(x):
             print x
+
         self.spider.log = _log
-        self.response = HtmlResponse(body="<html></html>", url="http://www.example.com/product/8798732") 
+        self.response = HtmlResponse(body="<html></html>", url="http://www.example.com/product/8798732")
         self.item = TestItem({'nom': 'myitem', 'prix': "56.70 euros", "url": "http://www.example.com/product.html?item_no=345"})
 
     def tearDown(self):

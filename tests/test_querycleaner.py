@@ -6,6 +6,7 @@ from scrapy.utils.test import get_crawler
 from scrapylib.querycleaner import QueryCleanerMiddleware
 from scrapy.exceptions import NotConfigured
 
+
 class QueryCleanerTestCase(TestCase):
 
     mwcls = QueryCleanerMiddleware
@@ -16,7 +17,7 @@ class QueryCleanerTestCase(TestCase):
     def test_not_loaded(self):
         crawler = get_crawler({})
         self.assertRaises(NotConfigured, self.mwcls.from_crawler, crawler)
-        
+
     def test_filter_keep(self):
         crawler = get_crawler({"QUERYCLEANER_KEEP": "qxp"})
         mw = self.mwcls.from_crawler(crawler)
