@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='scrapylib',
-    version='1.4.0',
+    version='1.5.0',
     license='BSD',
     description='Scrapy helper functions and processors',
     author='Scrapinghub',
