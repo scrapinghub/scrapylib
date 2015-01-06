@@ -33,6 +33,16 @@ from functools import partial
 
 
 class RequiredFields(object):
+    """Assert that the specified fields are populated"""
+
+    def __init__(self, *fields):
+        self.fields = fields
+
+    def __call__(self, item):
+        for f in self.fields:
+            assert f in item.keys(), "missing field: %s" % f
+
+class NonEmptyFields(object):
     """Assert that the specified fields are populated and non-empty"""
 
     def __init__(self, *fields):
@@ -40,8 +50,12 @@ class RequiredFields(object):
 
     def __call__(self, item):
         for f in self.fields:
-            v = item.get(f)
-            assert v, "missing field: %s" % f
+            assert f in item.keys(), "missing field: %s" % f
+            v = item[f]
+            try:
+                assert len(v) > 0, "empty field: %s" % f
+            except TypeError:
+                pass
 
 class IsType(object):
     """Assert that the specified fields are of the given type"""
