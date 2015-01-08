@@ -3,7 +3,7 @@ import datetime
 import locale
 import unittest
 
-from scrapylib.processors import to_datetime, to_date
+from scrapylib.processors import to_datetime, to_date, default_input_processor
 
 
 class TestProcessors(unittest.TestCase):
@@ -48,6 +48,19 @@ class TestProcessors(unittest.TestCase):
 
         self.assertEquals(current_locale, locale.getlocale(locale.LC_ALL))
 
+    def test_default_input_processor(self):
+        self.assertEquals(default_input_processor(
+            """<span id="discount_box" data-option-text="Discount &lt;span class=&quot;
+            percent&quot;id=&quot;buy_percent&quot;&gt;&lt;/span&gt;&lt;span class=&quot;
+            percent&quot;&gt;%&lt;/span&gt;" data-default-text="up to &lt;span class=&quot;
+            percent&quot; id=&quot;buy_percent&quot;&gt;54&lt;/span&gt;&lt;span class=&quot;
+            percent&quot;&gt;%&lt;/span&gt;" class="discount">up to <span class="percent"
+            id="buy_percent">54</span><span class="percent">%</span></span>"""),
+            [u'up to 54%'])
+
+        self.assertEquals(default_input_processor(
+            """<p>&lt;&lt; ...The Sunnywale, Calif.-based... &gt;&gt;</p>"""),
+            [u'<< ...The Sunnywale, Calif.-based... >>'])
 
 if __name__ == '__main__':
     unittest.main()

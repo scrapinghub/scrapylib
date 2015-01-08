@@ -82,7 +82,7 @@ def to_time(value, format):
 
 # defaults
 
-default_input_processor = MapCompose(unquote_markup, replace_br, remove_tags,
+default_input_processor = MapCompose(remove_tags, unquote_markup, replace_br,
                                      replace_escape, strip, clean_spaces)
 
 default_output_processor = TakeFirst()
