@@ -62,5 +62,9 @@ class TestProcessors(unittest.TestCase):
             """<p>&lt;&lt; ...The Sunnywale, Calif.-based... &gt;&gt;</p>"""),
             [u'<< ...The Sunnywale, Calif.-based... >>'])
 
+        self.assertEquals(default_input_processor(
+            """newline<br>must be replaced before tags and only then quotes like &lt;br>"""),
+            [u'newline must be replaced before tags and only then quotes like <br>'])
+
 if __name__ == '__main__':
     unittest.main()
