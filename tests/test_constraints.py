@@ -1,19 +1,34 @@
 import unittest
 
-from scrapylib.constraints import RequiredFields, IsType, IsNumber, IsPrice, MaxLen, MinLen
+from scrapylib.constraints import RequiredFields, NonEmptyFields, IsType, IsNumber, IsPrice, MaxLen, MinLen
 
 
 class RequiredFieldsTest(unittest.TestCase):
 
     def setUp(self):
-        self.item = {'str': 'bar', 'list': ['one']}
+        self.item = {'str': 'bar', 'list': ['one'], 'bool': False, 'none': None}
 
     def test_basic(self):
         RequiredFields('str')(self.item)
-        RequiredFields('str', 'list')(self.item)
+        RequiredFields('str', 'list', 'bool', 'none')(self.item)
 
     def test_fail(self):
         self.assertRaises(AssertionError, RequiredFields('list', 'xxx'), self.item)
+
+
+class NonEmptyFieldsTest(unittest.TestCase):
+
+    def setUp(self):
+        self.item = {'str': 'foo', 'list': [0], 'empty_str': '', 'empty_list': []}
+
+    def test_basic(self):
+        NonEmptyFields('str')(self.item)
+        NonEmptyFields('str', 'list')(self.item)
+
+    def test_fail(self):
+        self.assertRaises(AssertionError, NonEmptyFields('list', 'xxx'), self.item)
+        self.assertRaises(AssertionError, NonEmptyFields('empty_str'), self.item)
+        self.assertRaises(AssertionError, NonEmptyFields('empty_list'), self.item)
 
 
 class IsTypeTest(unittest.TestCase):
