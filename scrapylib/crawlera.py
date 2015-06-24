@@ -28,6 +28,10 @@ class CrawleraMiddleware(object):
     ]
 
     def __init__(self, crawler):
+        warnings.warn(
+            'This version of CrawleraMiddleware is deprecated, '
+            'please use the version found in the scrapy-crawlera '
+            'package instead.')
         self.crawler = crawler
         self.job_id = os.environ.get('SCRAPY_JOB')
         self._bans = defaultdict(int)
