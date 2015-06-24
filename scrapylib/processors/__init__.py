@@ -4,13 +4,14 @@ import re
 import time
 from urlparse import urljoin
 
-from scrapy import log
-from scrapy.contrib.loader.processor import Compose, MapCompose, TakeFirst
+from scrapy.loader.processors import MapCompose, TakeFirst
 from scrapy.utils.markup import (remove_tags, replace_escape_chars,
                                  unquote_markup)
 
 
 _clean_spaces_re = re.compile("\s+", re.U)
+
+
 def clean_spaces(value):
     return _clean_spaces_re.sub(' ', value)
 

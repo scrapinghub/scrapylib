@@ -1,5 +1,5 @@
 from dateutil.parser import parse
-from scrapy.contrib.loader.processor import Compose
+from scrapy.loader.processors import Compose
 from scrapy import log
 from scrapylib.processors import default_output_processor
 
