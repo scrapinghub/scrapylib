@@ -6,6 +6,17 @@ import unittest
 from scrapylib.processors import to_datetime, to_date, default_input_processor
 
 
+def locale_exists():
+    current_locale = locale.getlocale(locale.LC_TIME)
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except Exception:
+        return False
+    else:
+        locale.setlocale(locale.LC_TIME, current_locale)
+        return True
+
+
 class TestProcessors(unittest.TestCase):
 
     def test_to_datetime(self):
@@ -20,6 +31,7 @@ class TestProcessors(unittest.TestCase):
         self.assertEquals(to_datetime('March 4, 2011', '%B %d, %Y'),
                           datetime.datetime(2011, 3, 4))
 
+    @unittest.skipUnless(locale_exists(), "locale does not exist")
     def test_localized_to_datetime(self):
         current_locale = locale.getlocale(locale.LC_TIME)
 
@@ -38,6 +50,7 @@ class TestProcessors(unittest.TestCase):
         test_date = to_date('March 4', '%B %d')
         self.assertEquals(test_date.year, datetime.datetime.utcnow().year)
 
+    @unittest.skipUnless(locale_exists(), "locale does not exist")
     def test_localized_to_date(self):
         current_locale = locale.getlocale(locale.LC_TIME)
 

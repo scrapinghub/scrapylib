@@ -1,3 +1,4 @@
+six
 boto
 hubstorage>=0.23
 python-dateutil
