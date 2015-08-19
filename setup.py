@@ -16,5 +16,5 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python'
     ],
-    install_requires=['Scrapy>=0.22.0']
+    install_requires=['Scrapy>=1.0.0']
 )
