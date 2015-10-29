@@ -1,26 +1,25 @@
 language: python
 python: 2.7
+sudo: false
 env:
   matrix:
   - TOXENV=py27
   - TOXENV=pypy
-  - TOXENV=py33
-  global:
-    secure: AH7OJHftdepv1GFzZw7bYV7c0/8/lDHwcthszo3t83Oh5gnPJiijA4W64gqivdjt/qHRO+7NB+NOXK8ejtVRFTbc4UNzplzATw6MpwrsrBIeQ422lp6EGXNL+XqvNmwXC7e4Uwfl70y81z1hpiQI8pe/aFnyMs21N91do2zIfLM=
 matrix:
   allow_failures:
-  - env: TOXENV=py33
   - env: TOXENV=pypy
-before_install:
-- "./.travis-workarounds.sh"
-- sudo apt-get update -qq && sudo apt-get --reinstall install -qy language-pack-fr
-install:
-- pip install -U tox
+
+addons:
+  apt:
+    packages:
+      - language-pack-fr
+
 script: tox
+
 deploy:
   provider: pypi
   user: scrapinghub
-  distributions: "sdist bdist_wheel"
+  distributions: sdist bdist_wheel
   password:
     secure: iKVlMlKSr+LOuCCMMOqL65aYjNRy3k1Zb4d7NRN0JpWS5DGau8G8cEhJ1dY4uyc/DNKVJmd939OiLBsUqqCmz09+ozen/YrRNjEZS5lOwBNfhpiCESkbOjcInV1PQgx2XfuHGp8O/9vxtXjjH9WE9CabQ+8Zg5/rMMvXizT4/O4=
   on:
