@@ -63,7 +63,7 @@ class HcfTestCase(unittest.TestCase):
         return Response(url, request=Request(url="http://www.example.com/parent.html", meta=meta))
 
     def _get_crawler(self, settings=None):
-        crawler = get_crawler(settings)
+        crawler = get_crawler(settings_dict=settings)
         # simulate crawler engine
         class Engine():
             def __init__(self):

@@ -15,11 +15,11 @@ class QueryCleanerTestCase(TestCase):
         self.spider = Spider('foo')
 
     def test_not_loaded(self):
-        crawler = get_crawler({})
+        crawler = get_crawler(settings_dict={})
         self.assertRaises(NotConfigured, self.mwcls.from_crawler, crawler)
 
     def test_filter_keep(self):
-        crawler = get_crawler({"QUERYCLEANER_KEEP": "qxp"})
+        crawler = get_crawler(settings_dict={"QUERYCLEANER_KEEP": "qxp"})
         mw = self.mwcls.from_crawler(crawler)
         response = Response(url="http://www.example.com/qxg1231")
         request = Request(url="http://www.example.com/product/?qxp=12&qxg=1231")
@@ -28,7 +28,7 @@ class QueryCleanerTestCase(TestCase):
         self.assertNotEqual(request, new_request)
 
     def test_filter_remove(self):
-        crawler = get_crawler({"QUERYCLEANER_REMOVE": "qxg"})
+        crawler = get_crawler(settings_dict={"QUERYCLEANER_REMOVE": "qxg"})
         mw = self.mwcls.from_crawler(crawler)
         response = Response(url="http://www.example.com/qxg1231")
         request = Request(url="http://www.example.com/product/?qxp=12&qxg=1231")
