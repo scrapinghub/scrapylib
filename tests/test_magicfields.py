@@ -109,7 +109,7 @@ class MagicFieldsTest(TestCase):
 
     def test_mware(self):
         settings = {"MAGIC_FIELDS": {"spider": "$spider:name"}}
-        crawler = get_crawler(settings)
+        crawler = get_crawler(settings_dict=settings)
         mware = MagicFieldsMiddleware.from_crawler(crawler)
         result = list(mware.process_spider_output(self.response, [self.item], self.spider))[0]
         expected = {
@@ -125,7 +125,7 @@ class MagicFieldsTest(TestCase):
             "MAGIC_FIELDS": {"spider": "$spider:name"},
             "MAGIC_FIELDS_OVERRIDE": {"sku": "$field:nom"}
         }
-        crawler = get_crawler(settings)
+        crawler = get_crawler(settings_dict=settings)
         mware = MagicFieldsMiddleware.from_crawler(crawler)
         result = list(mware.process_spider_output(self.response, [self.item], self.spider))[0]
         expected = {

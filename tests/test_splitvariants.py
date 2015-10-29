@@ -35,7 +35,7 @@ class SplitVariantsTest(TestCase):
         Checks if item with variants is split as expected
         """
         settings = {"SPLITVARIANTS_ENABLED": True}
-        crawler = get_crawler(settings)
+        crawler = get_crawler(settings_dict=settings)
         mware = SplitVariantsMiddleware.from_crawler(crawler)
 
         # Define item with variants

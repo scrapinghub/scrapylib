@@ -37,7 +37,7 @@ class CrawleraMiddlewareTestCase(TestCase):
             def close_spider(self, spider, reason):
                 self.fake_spider_closed_result = (spider, reason)
 
-        crawler = get_crawler(settings)
+        crawler = get_crawler(settings_dict=settings)
         crawler.engine = MockedEngine()
         return crawler
 
