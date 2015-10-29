@@ -17,7 +17,7 @@ class DeltaFetch(object):
     intensive).
 
     Supported settings:
-    
+
     * DELTAFETCH_ENABLED - to enable (or disable) this extension
     * DELTAFETCH_DIR - directory where to store state
     * DELTAFETCH_DBM_MODULE - which DBM module to use for storage
@@ -60,7 +60,14 @@ class DeltaFetch(object):
         dbpath = os.path.join(self.dir, '%s.db' % spider.name)
         reset = self.reset or getattr(spider, 'deltafetch_reset', False)
         flag = 'n' if reset else 'c'
-        self.db = self.dbmodule.open(dbpath, flag)
+        try:
+            self.db = self.dbmodule.open(dbpath, flag)
+        except Exception:
+            spider.log("Failed to open DeltaFetch database at %s, "
+                       "trying to recreate it" % dbpath)
+            if os.path.exists(dbpath):
+                os.remove(dbpath)
+            self.db = self.dbmodule.open(dbpath, 'n')
 
     def spider_closed(self, spider):
         self.db.close()
