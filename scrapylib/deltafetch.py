@@ -7,6 +7,7 @@ from scrapy.utils.project import data_path
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 
+
 class DeltaFetch(object):
     """This is a spider middleware to ignore requests to pages containing items
     seen in previous crawls of the same spider, thus producing a "delta crawl"
@@ -20,7 +21,6 @@ class DeltaFetch(object):
 
     * DELTAFETCH_ENABLED - to enable (or disable) this extension
     * DELTAFETCH_DIR - directory where to store state
-    * DELTAFETCH_DBM_MODULE - which DBM module to use for storage
     * DELTAFETCH_RESET - reset the state, clearing out all seen requests
 
     Supported spider arguments:
@@ -36,9 +36,19 @@ class DeltaFetch(object):
 
     """
 
-    def __init__(self, dir, dbmodule='anydbm', reset=False):
+    def __init__(self, dir, reset=False):
+        dbmodule = None
+        try:
+            dbmodule = __import__('bsddb3').db
+        except ImportError:
+            try:
+                dbmodule = __import__('bsddb').db
+            except ImportError:
+                pass
+        if not dbmodule:
+            raise NotConfigured('bssdb or bsddb3 is required')
+        self.dbmodule = dbmodule
         self.dir = dir
-        self.dbmodule = __import__(dbmodule)
         self.reset = reset
 
     @classmethod
@@ -47,9 +57,8 @@ class DeltaFetch(object):
         if not s.getbool('DELTAFETCH_ENABLED'):
             raise NotConfigured
         dir = data_path(s.get('DELTAFETCH_DIR', 'deltafetch'))
-        dbmodule = s.get('DELTAFETCH_DBM_MODULE', 'anydbm')
         reset = s.getbool('DELTAFETCH_RESET')
-        o = cls(dir, dbmodule, reset)
+        o = cls(dir, reset)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
@@ -59,15 +68,21 @@ class DeltaFetch(object):
             os.makedirs(self.dir)
         dbpath = os.path.join(self.dir, '%s.db' % spider.name)
         reset = self.reset or getattr(spider, 'deltafetch_reset', False)
-        flag = 'n' if reset else 'c'
+        flag = self.dbmodule.DB_TRUNCATE if reset else self.dbmodule.DB_CREATE
         try:
-            self.db = self.dbmodule.open(dbpath, flag)
+            self.db = self.dbmodule.DB()
+            self.db.open(filename=dbpath,
+                         dbtype=self.dbmodule.DB_HASH,
+                         flags=flag)
         except Exception:
             spider.log("Failed to open DeltaFetch database at %s, "
                        "trying to recreate it" % dbpath)
             if os.path.exists(dbpath):
                 os.remove(dbpath)
-            self.db = self.dbmodule.open(dbpath, 'n')
+            self.db = self.dbmodule.DB()
+            self.db.open(filename=dbpath,
+                         dbtype=self.dbmodule.DB_HASH,
+                         flags=self.dbmodule.DB_CREATE)
 
     def spider_closed(self, spider):
         self.db.close()

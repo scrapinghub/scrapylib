@@ -4,15 +4,12 @@ sudo: false
 env:
   matrix:
   - TOXENV=py27
-  - TOXENV=pypy
-matrix:
-  allow_failures:
-  - env: TOXENV=pypy
 
 addons:
   apt:
     packages:
       - language-pack-fr
+      - libdb-dev
 
 install: pip install -U tox
 script: tox
