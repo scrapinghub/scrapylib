@@ -2,4 +2,4 @@ boto
 hubstorage
 python-dateutil
 scrapinghub
-Scrapy>=0.22.0
+Scrapy>=1.1.0rc1

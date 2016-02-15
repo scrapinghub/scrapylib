@@ -5,6 +5,7 @@ from scrapy.http import Request, Response
 from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 from twisted.internet.error import ConnectionRefusedError
+from six.moves import xrange
 
 from scrapylib.crawlera import CrawleraMiddleware
 import os
@@ -185,7 +186,7 @@ class CrawleraMiddlewareTestCase(TestCase):
         wascalled[:] = []  # reset
         enabled = True
         self.spider.crawlera_enabled = False
-        proxyauth = 'Basic Foo'
+        proxyauth = b'Basic Foo'
         self._assert_enabled(self.spider, self.settings, proxyauth=proxyauth)
         self.assertEqual(wascalled, ['is_enabled', 'get_proxyauth'])
 
@@ -271,4 +272,4 @@ class CrawleraMiddlewareTestCase(TestCase):
         mw1.open_spider(self.spider)
         req1 = Request('http://www.scrapytest.org')
         self.assertEqual(mw1.process_request(req1, self.spider), None)
-        self.assertEqual(req1.headers.get('X-Crawlera-Jobid'), '2816')
+        self.assertEqual(req1.headers.get('X-Crawlera-Jobid'), b'2816')

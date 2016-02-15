@@ -6,6 +6,6 @@ class ConstraintsPipeline(object):
         try:
             for c in item.constraints:
                 c(item)
-        except AssertionError, e:
+        except AssertionError as e:
             raise DropItem(str(e))
         return item

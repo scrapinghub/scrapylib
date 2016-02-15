@@ -1,7 +1,9 @@
 import base64
-from urllib import unquote
-from urllib2 import _parse_proxy
-from urlparse import urlunparse
+from six.moves.urllib.parse import unquote, urlunparse
+try:
+    from urllib2 import _parse_proxy
+except ImportError:
+    from urllib.request import _parse_proxy
 
 
 class SelectiveProxyMiddleware(object):

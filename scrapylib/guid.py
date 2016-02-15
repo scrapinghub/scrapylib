@@ -2,6 +2,10 @@ import hashlib
 
 from scrapy import signals
 from scrapy.exceptions import DropItem
+try:
+    from scrapy.utils.python import to_bytes
+except ImportError:
+    from scrapy.utils.python import unicode_to_str as to_bytes
 
 
 def hash_values(*values):
@@ -16,7 +20,7 @@ def hash_values(*values):
         if value is None:
             message = "hash_values was passed None at argument index %d" % list(values).index(None)
             raise ValueError(message)
-        hash.update('%s' % value)
+        hash.update(to_bytes('%s' % value))
     return hash.hexdigest()
 
 

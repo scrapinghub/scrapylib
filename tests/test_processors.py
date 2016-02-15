@@ -21,14 +21,14 @@ class TestProcessors(unittest.TestCase):
                           datetime.datetime(2011, 3, 4))
 
     def test_localized_to_datetime(self):
-        current_locale = locale.getlocale(locale.LC_ALL)
+        current_locale = locale.getlocale(locale.LC_TIME)
 
         self.assertEquals(
             to_datetime('11 janvier 2011', '%d %B %Y', locale='fr_FR.UTF-8'),
             datetime.datetime(2011, 1, 11)
         )
 
-        self.assertEquals(current_locale, locale.getlocale(locale.LC_ALL))
+        self.assertEquals(current_locale, locale.getlocale(locale.LC_TIME))
 
     def test_to_date(self):
         self.assertEquals(to_date('March 4, 2011', '%B %d, %Y'),
@@ -39,14 +39,14 @@ class TestProcessors(unittest.TestCase):
         self.assertEquals(test_date.year, datetime.datetime.utcnow().year)
 
     def test_localized_to_date(self):
-        current_locale = locale.getlocale(locale.LC_ALL)
+        current_locale = locale.getlocale(locale.LC_TIME)
 
         self.assertEquals(
             to_date('11 janvier 2011', '%d %B %Y', locale='fr_FR.UTF-8'),
             datetime.date(2011, 1, 11)
         )
 
-        self.assertEquals(current_locale, locale.getlocale(locale.LC_ALL))
+        self.assertEquals(current_locale, locale.getlocale(locale.LC_TIME))
 
     def test_default_input_processor(self):
         self.assertEquals(default_input_processor(
