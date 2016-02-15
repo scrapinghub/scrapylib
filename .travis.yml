@@ -1,10 +1,11 @@
 language: python
-python: 2.7
+python: 3.5
 sudo: false
 env:
   matrix:
   - TOXENV=py27
-
+  - TOXENV=py33
+  - TOXENV=py35
 addons:
   apt:
     packages:
