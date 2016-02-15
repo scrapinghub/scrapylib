@@ -27,7 +27,7 @@ class SplitVariantsTest(TestCase):
     def setUp(self):
         self.spider = Spider('myspider',
                              start_urls=["http://example.com"])
-        self.response = HtmlResponse(body="<html></html>",
+        self.response = HtmlResponse(body=b"<html></html>",
                                      url="http://www.example.com")
 
     def test_variants_splitted(self):

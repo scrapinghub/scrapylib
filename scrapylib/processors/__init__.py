@@ -2,7 +2,8 @@ import datetime
 import locale as localelib
 import re
 import time
-from urlparse import urljoin
+from six.moves.urllib.parse import urljoin
+
 
 from scrapy.loader.processors import MapCompose, TakeFirst
 from scrapy.utils.markup import (remove_tags, replace_escape_chars,
@@ -57,8 +58,8 @@ def to_datetime(value, format, locale=None):
     current date.
     """
     if locale:
-        old_locale = localelib.getlocale(localelib.LC_ALL)
-        localelib.setlocale(localelib.LC_ALL, locale)
+        old_locale = localelib.getlocale(localelib.LC_TIME)
+        localelib.setlocale(localelib.LC_TIME, locale)
 
     time_s = time.strptime(value, format)
     dt = datetime.datetime(*time_s[0:5])
@@ -67,7 +68,7 @@ def to_datetime(value, format, locale=None):
         dt = dt.replace(year=datetime.datetime.utcnow().year)
 
     if locale:
-        localelib.setlocale(localelib.LC_ALL, old_locale)
+        localelib.setlocale(localelib.LC_TIME, old_locale)
 
     return dt
 

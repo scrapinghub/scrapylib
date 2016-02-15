@@ -6,7 +6,7 @@ after the magic name, using a ':' as separator.
 
 You can set project global magics with MAGIC_FIELDS, and tune them for a specific spider using MAGIC_FIELDS_OVERRIDE.
 
-In case there is more than one argument, they must come separated by ','. So, the generic magic format is 
+In case there is more than one argument, they must come separated by ','. So, the generic magic format is
 
 $<magic name>[:arg1,arg2,...]
 
@@ -78,7 +78,7 @@ def _extract_regex_group(regex, txt):
         try:
             compiled = re.compile(regex)
             _REGEXES[regex] = compiled
-        except Exception, e:
+        except Exception as e:
             errmessage = e.message
             _REGEX_ERRORS[regex] = errmessage
     if errmessage:
@@ -103,7 +103,7 @@ def _format(fmt, spider, response, item, fixed_values):
     for m in _ENTITIES_RE.finditer(fmt):
         val = None
         entity, args, regex = m.groups()
-        args = filter(None, (args or ':')[1:].split(','))
+        args = list(filter(None, (args or ':')[1:].split(',')))
         if entity == "$jobid":
             val = os.environ.get('SCRAPY_JOB', '')
         elif entity == "$spider":
@@ -143,13 +143,13 @@ def _format(fmt, spider, response, item, fixed_values):
         if regex:
             try:
                 out = _extract_regex_group(regex, out)
-            except ValueError, e:
+            except ValueError as e:
                 spider.log("Error at '%s': %s" % (m.group(), e.message))
 
     return out
 
 class MagicFieldsMiddleware(object):
-    
+
     @classmethod
     def from_crawler(cls, crawler):
         mfields = crawler.settings.getdict("MAGIC_FIELDS").copy()
@@ -170,5 +170,5 @@ class MagicFieldsMiddleware(object):
             if isinstance(_res, BaseItem):
                 for field, fmt in self.mfields.items():
                     _res.setdefault(field, _format(fmt, spider, response, _res, self.fixed_values))
-            yield _res 
+            yield _res
 

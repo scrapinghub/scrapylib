@@ -8,7 +8,8 @@ QUERYCLEANER_KEEP
 Remove patterns has precedence.
 """
 import re
-from urllib import quote
+from six.moves.urllib.parse import quote
+from six import string_types
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.http import Request
@@ -51,7 +52,7 @@ def _filter_query(query, remove_re=None, keep_re=None):
             continue
         if keep_re is None or keep_re.search(k):
             qarg = quote(k, _safe_chars)
-            if isinstance(v, basestring):
+            if isinstance(v, string_types):
                 qarg = qarg + '=' + quote(v, _safe_chars)
             qargs.append(qarg.replace("%20", "+"))
     return '&'.join(qargs)

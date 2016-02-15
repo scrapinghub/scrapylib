@@ -261,6 +261,6 @@ class DeltaFetchTestCase(TestCase):
         # truncate test db if there were failed tests
         db.open(self.db_path, dbmodule.db.DB_HASH,
                 dbmodule.db.DB_CREATE | dbmodule.db.DB_TRUNCATE)
-        db['test_key_1'] = 'test_v_1'
-        db['test_key_2'] = 'test_v_2'
+        db.put('test_key_1', 'test_v_1')
+        db.put('test_key_2', 'test_v_2')
         db.close()
