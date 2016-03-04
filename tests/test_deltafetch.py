@@ -9,6 +9,7 @@ from scrapy.spider import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_fingerprint
+from scrapy.utils.python import to_bytes
 from scrapylib.deltafetch import DeltaFetch
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.test import get_crawler
@@ -90,8 +91,8 @@ class DeltaFetchTestCase(TestCase):
         mw.spider_opened(self.spider)
         assert hasattr(mw, 'db')
         assert isinstance(mw.db, type(dbmodule.db.DB()))
-        assert mw.db.items() == [('test_key_1', 'test_v_1'),
-                                 ('test_key_2', 'test_v_2')]
+        assert mw.db.items() == [(b'test_key_1', b'test_v_1'),
+                                 (b'test_key_2', b'test_v_2')]
         assert mw.db.get_type() == dbmodule.db.DB_HASH
         assert mw.db.get_open_flags() == dbmodule.db.DB_CREATE
 
@@ -154,8 +155,8 @@ class DeltaFetchTestCase(TestCase):
         result = [BaseItem(), "not a base item"]
         self.assertEqual(list(mw.process_spider_output(
             response, result, self.spider)), result)
-        self.assertEqual(mw.db.keys(), ['test_key_1', 'key', 'test_key_2'])
-        assert mw.db['key']
+        self.assertEqual(mw.db.keys(), [b'test_key_1', b'key', b'test_key_2'])
+        assert mw.db[b'key']
 
     def test_process_spider_output_stats(self):
         self._create_test_db()
@@ -252,15 +253,15 @@ class DeltaFetchTestCase(TestCase):
         mw = self.mwcls(self.temp_dir, reset=True)
         test_req1 = Request('http://url1')
         self.assertEqual(mw._get_key(test_req1),
-                         request_fingerprint(test_req1))
+                         to_bytes(request_fingerprint(test_req1)))
         test_req2 = Request('http://url2', meta={'deltafetch_key': 'dfkey1'})
-        self.assertEqual(mw._get_key(test_req2), 'dfkey1')
+        self.assertEqual(mw._get_key(test_req2), b'dfkey1')
 
     def _create_test_db(self):
         db = dbmodule.db.DB()
         # truncate test db if there were failed tests
         db.open(self.db_path, dbmodule.db.DB_HASH,
                 dbmodule.db.DB_CREATE | dbmodule.db.DB_TRUNCATE)
-        db.put('test_key_1', 'test_v_1')
-        db.put('test_key_2', 'test_v_2')
+        db.put(b'test_key_1', b'test_v_1')
+        db.put(b'test_key_2', b'test_v_2')
         db.close()

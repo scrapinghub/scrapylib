@@ -4,6 +4,7 @@ from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
+from scrapy.utils.python import to_bytes
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 
@@ -99,10 +100,12 @@ class DeltaFetch(object):
                     continue
             elif isinstance(r, BaseItem):
                 key = self._get_key(response.request)
-                self.db[key] = str(time.time())
+                self.db[key] = str(time.time()).encode('iso8859-1')
                 if self.stats:
                     self.stats.inc_value('deltafetch/stored', spider=spider)
             yield r
 
     def _get_key(self, request):
-        return request.meta.get('deltafetch_key') or request_fingerprint(request)
+        key = request.meta.get('deltafetch_key') or request_fingerprint(request)
+        # request_fingerprint() returns `hashlib.sha1().hexdigest()`, is a string
+        return to_bytes(key)
