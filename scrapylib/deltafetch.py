@@ -36,7 +36,7 @@ class DeltaFetch(object):
 
     """
 
-    def __init__(self, dir, reset=False):
+    def __init__(self, dir, stats=None, reset=False):
         dbmodule = None
         try:
             dbmodule = __import__('bsddb3').db
@@ -50,6 +50,7 @@ class DeltaFetch(object):
         self.dbmodule = dbmodule
         self.dir = dir
         self.reset = reset
+        self.stats = stats
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -58,7 +59,7 @@ class DeltaFetch(object):
             raise NotConfigured
         dir = data_path(s.get('DELTAFETCH_DIR', 'deltafetch'))
         reset = s.getbool('DELTAFETCH_RESET')
-        o = cls(dir, reset)
+        o = cls(dir, crawler.stats, reset)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
@@ -93,10 +94,12 @@ class DeltaFetch(object):
                 key = self._get_key(r)
                 if self.db.has_key(key):
                     spider.log("Ignoring already visited: %s" % r, level=log.INFO)
+                    self.stats.inc_value('deltafetch/skipped', spider=spider)
                     continue
             elif isinstance(r, BaseItem):
                 key = self._get_key(response.request)
                 self.db[key] = str(time.time())
+                self.stats.inc_value('deltafetch/stored', spider=spider)
             yield r
 
     def _get_key(self, request):
