@@ -36,7 +36,7 @@ class DeltaFetch(object):
 
     """
 
-    def __init__(self, dir, stats=None, reset=False):
+    def __init__(self, dir, reset=False, stats=None):
         dbmodule = None
         try:
             dbmodule = __import__('bsddb3').db
@@ -59,7 +59,7 @@ class DeltaFetch(object):
             raise NotConfigured
         dir = data_path(s.get('DELTAFETCH_DIR', 'deltafetch'))
         reset = s.getbool('DELTAFETCH_RESET')
-        o = cls(dir, crawler.stats, reset)
+        o = cls(dir, reset, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o

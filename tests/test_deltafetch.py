@@ -37,7 +37,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_init(self):
         # path format is any,  the folder is not created
-        instance = self.mwcls('/any/dir', self.stats, True)
+        instance = self.mwcls('/any/dir', True, stats=self.stats)
         assert isinstance(instance, self.mwcls)
         self.assertEqual(instance.dir, '/any/dir')
         self.assertEqual(self.stats.get_stats(), {})
@@ -72,7 +72,7 @@ class DeltaFetchTestCase(TestCase):
     def test_spider_opened_new(self):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
-        mw = self.mwcls(self.temp_dir, self.stats, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert os.path.isdir(self.temp_dir)
@@ -85,7 +85,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_existing(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert hasattr(mw, 'db')
@@ -97,14 +97,14 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_existing_spider_reset(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         self.spider.deltafetch_reset = True
         mw.spider_opened(self.spider)
         assert mw.db.get_open_flags() == dbmodule.db.DB_TRUNCATE
 
     def test_spider_opened_reset_non_existing_db(self):
-        mw = self.mwcls(self.temp_dir, self.stats, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         self.spider.deltafetch_reset = True
         mw.spider_opened(self.spider)
@@ -117,7 +117,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_recreate(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert hasattr(mw, 'db')
@@ -128,7 +128,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_closed(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         mw.spider_opened(self.spider)
         assert mw.db.fd()
         mw.spider_closed(self.spider)
@@ -136,7 +136,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_process_spider_output(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         mw.spider_opened(self.spider)
         response = mock.Mock()
         response.request = Request('http://url',
@@ -159,7 +159,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_process_spider_output_stats(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, self.stats, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         mw.spider_opened(self.spider)
         response = mock.Mock()
         response.request = Request('http://url',
