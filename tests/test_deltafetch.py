@@ -10,7 +10,8 @@ from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_fingerprint
 from scrapylib.deltafetch import DeltaFetch
-
+from scrapy.statscollectors import StatsCollector
+from scrapy.utils.test import get_crawler
 
 dbmodule = None
 try:
@@ -31,12 +32,15 @@ class DeltaFetchTestCase(TestCase):
         self.spider = Spider('df_tests')
         self.temp_dir = tempfile.gettempdir()
         self.db_path = os.path.join(self.temp_dir, 'df_tests.db')
+        crawler = get_crawler(Spider)
+        self.stats = StatsCollector(crawler)
 
     def test_init(self):
         # path format is any,  the folder is not created
-        instance = self.mwcls('/any/dir', True)
+        instance = self.mwcls('/any/dir', True, stats=self.stats)
         assert isinstance(instance, self.mwcls)
         self.assertEqual(instance.dir, '/any/dir')
+        self.assertEqual(self.stats.get_stats(), {})
         self.assertEqual(instance.reset, True)
 
     def test_init_from_crawler(self):
@@ -68,7 +72,7 @@ class DeltaFetchTestCase(TestCase):
     def test_spider_opened_new(self):
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
-        mw = self.mwcls(self.temp_dir, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert os.path.isdir(self.temp_dir)
@@ -81,7 +85,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_existing(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert hasattr(mw, 'db')
@@ -93,14 +97,14 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_existing_spider_reset(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         self.spider.deltafetch_reset = True
         mw.spider_opened(self.spider)
         assert mw.db.get_open_flags() == dbmodule.db.DB_TRUNCATE
 
     def test_spider_opened_reset_non_existing_db(self):
-        mw = self.mwcls(self.temp_dir, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         self.spider.deltafetch_reset = True
         mw.spider_opened(self.spider)
@@ -113,7 +117,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_opened_recreate(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         assert not hasattr(self.mwcls, 'db')
         mw.spider_opened(self.spider)
         assert hasattr(mw, 'db')
@@ -124,7 +128,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_spider_closed(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, reset=True)
+        mw = self.mwcls(self.temp_dir, reset=True, stats=self.stats)
         mw.spider_opened(self.spider)
         assert mw.db.fd()
         mw.spider_closed(self.spider)
@@ -132,7 +136,7 @@ class DeltaFetchTestCase(TestCase):
 
     def test_process_spider_output(self):
         self._create_test_db()
-        mw = self.mwcls(self.temp_dir, reset=False)
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
         mw.spider_opened(self.spider)
         response = mock.Mock()
         response.request = Request('http://url',
@@ -140,19 +144,41 @@ class DeltaFetchTestCase(TestCase):
         result = []
         self.assertEqual(list(mw.process_spider_output(
             response, result, self.spider)), [])
-
         result = [
             Request('http://url', meta={'deltafetch_key': 'key1'}),
             Request('http://url1', meta={'deltafetch_key': 'test_key_1'})
         ]
         self.assertEqual(list(mw.process_spider_output(
             response, result, self.spider)), [result[0]])
-
+        self.assertEqual(self.stats.get_stats(), {'deltafetch/skipped': 1})
         result = [BaseItem(), "not a base item"]
         self.assertEqual(list(mw.process_spider_output(
             response, result, self.spider)), result)
         self.assertEqual(mw.db.keys(), ['test_key_1', 'key', 'test_key_2'])
         assert mw.db['key']
+
+    def test_process_spider_output_stats(self):
+        self._create_test_db()
+        mw = self.mwcls(self.temp_dir, reset=False, stats=self.stats)
+        mw.spider_opened(self.spider)
+        response = mock.Mock()
+        response.request = Request('http://url',
+                                   meta={'deltafetch_key': 'key'})
+        result = []
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), [])
+        self.assertEqual(self.stats.get_stats(), {})
+        result = [
+            Request('http://url', meta={'deltafetch_key': 'key'}),
+            Request('http://url1', meta={'deltafetch_key': 'test_key_1'})
+        ]
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), [result[0]])
+        self.assertEqual(self.stats.get_value('deltafetch/skipped'), 1)
+        result = [BaseItem(), "not a base item"]
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), result)
+        self.assertEqual(self.stats.get_value('deltafetch/stored'), 1)
 
     def test_get_key(self):
         mw = self.mwcls(self.temp_dir, reset=True)
