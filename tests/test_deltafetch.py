@@ -180,6 +180,74 @@ class DeltaFetchTestCase(TestCase):
             response, result, self.spider)), result)
         self.assertEqual(self.stats.get_value('deltafetch/stored'), 1)
 
+    def test_init_from_crawler_legacy(self):
+        # test with subclass not handling passed stats
+        class LegacyDeltaFetchSubClass(self.mwcls):
+
+            def __init__(self, dir, reset=False, *args, **kwargs):
+                super(LegacyDeltaFetchSubClass, self).__init__(dir=dir, reset=reset)
+                self.something = True
+
+        crawler = mock.Mock()
+        # void settings
+        crawler.settings = Settings({})
+        self.assertRaises(NotConfigured, self.mwcls.from_crawler, crawler)
+
+        with mock.patch('scrapy.utils.project.project_data_dir') as data_dir:
+            data_dir.return_value = self.temp_dir
+
+            # simple project_data_dir mock with based settings
+            crawler.settings = Settings({'DELTAFETCH_ENABLED': True})
+            instance = LegacyDeltaFetchSubClass.from_crawler(crawler)
+            assert isinstance(instance, self.mwcls)
+            self.assertEqual(
+                instance.dir, os.path.join(self.temp_dir, 'deltafetch'))
+            self.assertEqual(instance.reset, False)
+
+            # project_data_dir mock with advanced settings
+            crawler.settings = Settings({'DELTAFETCH_ENABLED': True,
+                                         'DELTAFETCH_DIR': 'other',
+                                         'DELTAFETCH_RESET': True})
+            instance = LegacyDeltaFetchSubClass.from_crawler(crawler)
+            assert isinstance(instance, self.mwcls)
+            self.assertEqual(
+                instance.dir, os.path.join(self.temp_dir, 'other'))
+            self.assertEqual(instance.reset, True)
+
+    def test_process_spider_output_stats_legacy(self):
+        # testing the subclass not handling stats works at runtime
+        # (i.e. that trying to update stats does not trigger exception)
+        class LegacyDeltaFetchSubClass(self.mwcls):
+
+            def __init__(self, dir, reset=False, *args, **kwargs):
+                super(LegacyDeltaFetchSubClass, self).__init__(dir=dir, reset=reset)
+                self.something = True
+
+        self._create_test_db()
+        mw = LegacyDeltaFetchSubClass(self.temp_dir, reset=False)
+        mw.spider_opened(self.spider)
+        response = mock.Mock()
+        response.request = Request('http://url',
+                                   meta={'deltafetch_key': 'key'})
+        result = []
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), [])
+        self.assertEqual(self.stats.get_stats(), {})
+        result = [
+            Request('http://url', meta={'deltafetch_key': 'key'}),
+            Request('http://url1', meta={'deltafetch_key': 'test_key_1'})
+        ]
+
+        # stats should not be updated
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), [result[0]])
+        self.assertEqual(self.stats.get_value('deltafetch/skipped'), None)
+
+        result = [BaseItem(), "not a base item"]
+        self.assertEqual(list(mw.process_spider_output(
+            response, result, self.spider)), result)
+        self.assertEqual(self.stats.get_value('deltafetch/stored'), None)
+
     def test_get_key(self):
         mw = self.mwcls(self.temp_dir, reset=True)
         test_req1 = Request('http://url1')
