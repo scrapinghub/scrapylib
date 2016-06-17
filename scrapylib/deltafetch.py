@@ -94,12 +94,14 @@ class DeltaFetch(object):
                 key = self._get_key(r)
                 if self.db.has_key(key):
                     spider.log("Ignoring already visited: %s" % r, level=log.INFO)
-                    self.stats.inc_value('deltafetch/skipped', spider=spider)
+                    if self.stats:
+                        self.stats.inc_value('deltafetch/skipped', spider=spider)
                     continue
             elif isinstance(r, BaseItem):
                 key = self._get_key(response.request)
                 self.db[key] = str(time.time())
-                self.stats.inc_value('deltafetch/stored', spider=spider)
+                if self.stats:
+                    self.stats.inc_value('deltafetch/stored', spider=spider)
             yield r
 
     def _get_key(self, request):
