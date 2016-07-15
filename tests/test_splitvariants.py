@@ -1,7 +1,7 @@
 """ Tests to cover splitvariants middleware """
 from unittest import TestCase
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.item import DictItem, Field
 from scrapy.http import HtmlResponse
 from scrapy.utils.test import get_crawler

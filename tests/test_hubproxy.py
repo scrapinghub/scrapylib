@@ -3,7 +3,7 @@ from six.moves import xrange
 
 from w3lib.http import basic_auth_header
 from scrapy.http import Request, Response
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapylib.hubproxy import HubProxyMiddleware
 

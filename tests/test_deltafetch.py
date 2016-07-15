@@ -5,7 +5,7 @@ import mock
 import tempfile
 from scrapy import Request
 from scrapy.item import BaseItem
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_fingerprint

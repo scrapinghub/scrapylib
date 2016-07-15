@@ -2,7 +2,7 @@ from __future__ import print_function
 import re, os
 from unittest import TestCase
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapy.item import DictItem, Field
 from scrapy.http import HtmlResponse

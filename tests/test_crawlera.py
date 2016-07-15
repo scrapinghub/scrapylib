@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from w3lib.http import basic_auth_header
 from scrapy.http import Request, Response
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from twisted.internet.error import ConnectionRefusedError
 from six.moves import xrange
