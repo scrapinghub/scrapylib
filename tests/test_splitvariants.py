@@ -1,7 +1,7 @@
 """ Tests to cover splitvariants middleware """
 from unittest import TestCase
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.item import DictItem, Field
 from scrapy.http import HtmlResponse
 from scrapy.utils.test import get_crawler
@@ -27,7 +27,7 @@ class SplitVariantsTest(TestCase):
     def setUp(self):
         self.spider = Spider('myspider',
                              start_urls=["http://example.com"])
-        self.response = HtmlResponse(body="<html></html>",
+        self.response = HtmlResponse(body=b"<html></html>",
                                      url="http://www.example.com")
 
     def test_variants_splitted(self):

@@ -1,8 +1,9 @@
 from unittest import TestCase
+from six.moves import xrange
 
 from w3lib.http import basic_auth_header
 from scrapy.http import Request, Response
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapylib.hubproxy import HubProxyMiddleware
 
@@ -161,6 +162,6 @@ class HubProxyMiddlewareTestCase(TestCase):
         wascalled[:] = [] # reset
         enabled = True
         self.spider.use_hubproxy = False
-        proxyauth = 'Basic Foo'
+        proxyauth = b'Basic Foo'
         self._assert_enabled(self.spider, self.settings, proxyauth=proxyauth)
         self.assertEqual(wascalled, ['is_enabled', 'get_proxyauth'])

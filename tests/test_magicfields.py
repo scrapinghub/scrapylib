@@ -1,7 +1,8 @@
+from __future__ import print_function
 import re, os
 from unittest import TestCase
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapy.item import DictItem, Field
 from scrapy.http import HtmlResponse
@@ -26,10 +27,10 @@ class MagicFieldsTest(TestCase):
         self.spider = Spider('myspider', arg1='val1', start_urls = ["http://example.com"])
 
         def _log(x):
-            print x
+            print(x)
 
         self.spider.log = _log
-        self.response = HtmlResponse(body="<html></html>", url="http://www.example.com/product/8798732")
+        self.response = HtmlResponse(body=b"<html></html>", url="http://www.example.com/product/8798732")
         self.item = TestItem({'nom': 'myitem', 'prix': "56.70 euros", "url": "http://www.example.com/product.html?item_no=345"})
 
     def tearDown(self):
