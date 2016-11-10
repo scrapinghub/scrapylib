@@ -7,7 +7,7 @@ setup(
     description='Scrapy helper functions and processors',
     author='Scrapinghub',
     author_email='info@scrapinghub.com',
-    url='http://github.com/scrapinghub/scrapylib',
+    url='https://pypi.python.org/pypi/scrapylib',
     packages=['scrapylib', 'scrapylib.constraints', 'scrapylib.processors'],
     platforms=['Any'],
     classifiers=[
