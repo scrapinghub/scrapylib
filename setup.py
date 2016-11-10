@@ -11,7 +11,7 @@ setup(
     packages=['scrapylib', 'scrapylib.constraints', 'scrapylib.processors'],
     platforms=['Any'],
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 7 - Inactive',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python'
